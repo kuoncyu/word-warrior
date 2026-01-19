@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>字靈獵人：全裝備系統 (V27)</title>
+    <script src="moe_data.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Cinzel:wght@700&display=swap');
+
+        :root {
+            --bg-dark: #0f0f10;
+            --panel-bg: rgba(25, 25, 30, 0.98);
+            --primary: #c23616;
+            --accent: #fbc531;
+            --text: #f5f6fa;
+            --font-title: 'Cinzel', serif;
+            --font-main: 'Noto Serif TC', serif;
+            
+            --c-common: #95a5a6; --c-uncommon: #2ecc71; --c-rare: #3498db; --c-epic: #9b59b6; --c-legendary: #e74c3c;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+        body {
+            font-family: var(--font-main); background-color: var(--bg-dark); color: var(--text);
+            margin: 0; display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+            background: radial-gradient(circle at 50% 30%, #1e0505 0%, #000 100%);
+        }
+
+        .embers {
+            position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: -1;
+            background-image: radial-gradient(rgba(194, 54, 22, 0.3) 1px, transparent 1px);
+            background-size: 50px 50px; animation: rise 25s linear infinite; opacity: 0.5;
+        }
+        @keyframes rise { from {transform: translateY(0);} to {transform: translateY(-600px);} }
+
+        .app-container {
+            width: 100%; max-width: 550px; height: 100%; max-height: 950px;
+            background: var(--panel-bg); border: 2px solid #571a1a;
+            box-shadow: 0 0 80px rgba(194, 54, 22, 0.3); position: relative;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        @media (min-width: 550px) { .app-container { border-radius: 12px; height: 95vh; } }
+
+        /* Common UI */
+        .top-bar { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.8); border-bottom: 1px solid #333; }
+        .sound-btn { cursor: pointer; font-size: 1.5rem; width: 40px; text-align: center; }
+        .gems { color: var(--accent); font-family: var(--font-title); font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
+        
+        .content { flex: 1; overflow-y: auto; padding: 15px; position: relative; scroll-behavior: smooth; }
+        .tab-page { display: none; animation: fadeIn 0.4s; }
+        .tab-page.active { display: block; }
+        @keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+
+        .start-btn {
+            background: linear-gradient(135deg, #c23616, #8e44ad);
+            color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 12px 30px;
+            font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+            font-family: var(--font-title); letter-spacing: 2px;
+            box-shadow: 0 0 15px rgba(194, 54, 22, 0.5); clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+        .start-btn:active { transform: scale(0.96); filter: brightness(0.8); }
+
+        /* Character & Equipment Grid */
+        .hero-summary { display:flex; align-items:center; gap:15px; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid #333; }
+        .hero-avatar { font-size: 3.5rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
+        .hero-info { flex:1; }
+        
+        .xp-container { width: 100%; background: #333; height: 6px; border-radius: 3px; overflow: hidden; margin-top:5px; }
+        .xp-fill { height: 100%; background: linear-gradient(90deg, #8e44ad, #9b59b6); width: 0%; transition: width 0.5s; }
+
+        /* 8-Slot Grid */
+        .equip-grid { 
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; 
+            background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 1px solid #333;
+        }
+        .equip-slot {
+            aspect-ratio: 1; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 6px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; position: relative; transition: 0.2s;
+        }
+        .equip-slot:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+        .slot-icon { font-size: 1.8rem; }
+        .slot-name { font-size: 0.6rem; color: #7f8fa6; margin-top: 2px; }
+        .slot-equipped { border-color: var(--accent); background: rgba(251, 197, 49, 0.1); }
+
+        /* Consumables Section */
+        .section-title { font-family: var(--font-title); color: #7f8fa6; font-size: 0.9rem; margin: 15px 0 5px 0; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .consumable-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .consumable-item { 
+            flex: 1; background: #2f3640; padding: 10px; border-radius: 6px; display: flex; align-items: center; border: 1px solid #444; 
+        }
+        .con-icon { font-size: 1.5rem; margin-right: 10px; }
+        .con-info div:first-child { color: #fff; font-weight: bold; font-size: 0.9rem; }
+        .con-qty { color: var(--accent); font-weight: bold; }
+
+        /* Inventory List */
+        .inv-item { display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 10px; margin-bottom: 5px; border-left: 3px solid #555; border-radius: 4px; }
+        .btn-action { margin-left: auto; padding: 5px 12px; background: #353b48; border: 1px solid #555; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+
+        /* Battle & Stats */
+        .stat-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px; }
+        
+        .timer-container { width: 100%; height: 6px; background: #333; margin-top: 15px; border-radius: 3px; overflow: hidden; }
+        .timer-fill { height: 100%; background: #00a8ff; width: 100%; transition: width 1s linear; }
+        
+        /* Modal & Effects */
+        .modal { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        .modal-box { background: #1e272e; width: 85%; max-width: 400px; padding: 30px; border: 1px solid var(--primary); text-align: center; border-radius: 10px; }
+        .float-txt { position: absolute; left: 50%; top: 40%; transform: translateX(-50%); font-family: var(--font-title); font-weight:bold; pointer-events: none; animation: popUp 0.8s forwards; z-index: 50; text-shadow: 2px 2px 0 #000; }
+        @keyframes popUp { 0%{opacity:0; transform:translate(-50%,0) scale(0.5);} 20%{opacity:1; transform:translate(-50%,-50px) scale(1.5);} 100%{opacity:0; transform:translate(-50%,-100px) scale(1);} }
+
+        /* Cover */
+        #cover-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        
+        /* Quiz */
+        .quiz-panel { background: rgba(30, 30, 35, 0.95); border: 1px solid #571a1a; padding: 20px; margin-top: 5px; border-radius: 8px; }
+        .opt-btn { width: 100%; padding: 14px; margin-bottom: 8px; background: #2f3640; border: 1px solid #57606f; color: #dcdde1; font-size: 1.2rem; cursor: pointer; font-family: "KaiTi"; font-weight: bold; border-radius: 6px; }
+        
+        .nav-bar { display: flex; background: #000; border-top: 1px solid #333; height: 60px; }
+        .nav-btn { flex: 1; background: none; border: none; color: #555; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; }
+        .nav-btn.active { color: var(--primary); background: rgba(194, 54, 22, 0.1); }
+        .nav-icon { font-size: 1.2rem; }
+
+    </style>
+</head>
+<body>
+
+<div class="embers"></div>
+
+<div id="cover-screen">
+    <div style="font-size:5rem; margin-bottom: 10px; filter: drop-shadow(0 0 20px var(--primary));">🔥</div>
+    <div style="font-family: var(--font-title); font-size: 3rem; color: var(--primary); letter-spacing: 3px;">WORD<br>WARRIOR</div>
+    <p style="color:#7f8fa6; letter-spacing: 2px;">FULL GEAR V27</p>
+    <div id="status-text" style="color:#2ecc71; margin: 15px 0;">正在載入...</div>
+    <button class="start-btn" onclick="initGameSafe()">START BATTLE</button>
+    <div style="margin-top:20px; color:#555; cursor:pointer; text-decoration:underline; font-size:0.8rem;" onclick="hardReset()">重置遊戲 (Reset)</div>
+</div>
+
+<div class="app-container" id="app-ui" style="display:none;">
+    <div class="top-bar">
+        <div class="sound-btn" id="sound-btn" onclick="toggleMute()">🔇</div>
+        <div class="gems">💎 <span id="ui-gems">0</span></div>
+    </div>
+
+    <div id="tab-char" class="content tab-page active">
+        <div class="hero-summary">
+            <div class="hero-avatar">🥷</div>
+            <div class="hero-info">
+                <div style="font-family:var(--font-title); font-size:1.2rem; color:var(--accent);">HUNTER <span style="font-size:0.8rem; color:#fff; background:#444; padding:2px 6px; border-radius:4px; vertical-align:middle;">Lv.<span id="ui-lvl">1</span></span></div>
+                <div class="xp-container"><div class="xp-fill" id="ui-xp-bar"></div></div>
+                <div style="font-size:0.7rem; color:#aaa; margin-top:2px;">EXP: <span id="ui-xp-text">0/100</span></div>
+            </div>
+        </div>
+
+        <div class="section-title">📊 屬性 (STATS)</div>
+        <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:6px; margin-bottom:15px;">
+            <div class="stat-row"><span>⚔️ 攻擊力 (ATK)</span><span id="stat-atk" style="color:#e74c3c">0</span></div>
+            <div class="stat-row"><span>🛡️ 防禦力 (DEF)</span><span id="stat-def" style="color:#3498db">0</span></div>
+            <div class="stat-row"><span>❤️ 生命值 (HP)</span><span id="stat-hp" style="color:#2ecc71">0</span></div>
+            <div class="stat-row"><span>⚡ 暴擊率 (CRIT)</span><span id="stat-crit" style="color:#f1c40f">0%</span></div>
+            <div class="stat-row"><span>💨 閃避率 (DODGE)</span><span id="stat-dodge" style="color:#9b59b6">0%</span></div>
+        </div>
+
+        <div class="section-title">🎒 道具 (CONSUMABLES)</div>
+        <div class="consumable-row">
+            <div class="consumable-item">
+                <div class="con-icon">🧪</div>
+                <div class="con-info"><div>HP 藥水</div><div style="font-size:0.7rem; color:#aaa;">恢復 50% HP</div></div>
+                <div style="margin-left:auto;" class="con-qty">x<span id="inv-potion">0</span></div>
+            </div>
+            <div class="consumable-item">
+                <div class="con-icon">🛡️</div>
+                <div class="con-info"><div>防護盾</div><div style="font-size:0.7rem; color:#aaa;">抵擋 2 回合</div></div>
+                <div style="margin-left:auto;" class="con-qty">x<span id="inv-shield">0</span></div>
+            </div>
+        </div>
+
+        <div class="section-title">🛡️ 裝備 (EQUIPMENT)</div>
+        <div class="equip-grid">
+            <div class="equip-slot" id="slot-head" onclick="unequip('head')"><div class="slot-icon">⛑️</div><div class="slot-name">頭部</div></div>
+            <div class="equip-slot" id="slot-body" onclick="unequip('body')"><div class="slot-icon">👕</div><div class="slot-name">身體</div></div>
+            <div class="equip-slot" id="slot-gloves" onclick="unequip('gloves')"><div class="slot-icon">🧤</div><div class="slot-name">手套</div></div>
+            <div class="equip-slot" id="slot-legs" onclick="unequip('legs')"><div class="slot-icon">👖</div><div class="slot-name">褲子</div></div>
+            <div class="equip-slot" id="slot-feet" onclick="unequip('feet')"><div class="slot-icon">👢</div><div class="slot-name">鞋子</div></div>
+            <div class="equip-slot" id="slot-accessory" onclick="unequip('accessory')"><div class="slot-icon">💍</div><div class="slot-name">飾品</div></div>
+            <div class="equip-slot" id="slot-weapon" onclick="unequip('weapon')"><div class="slot-icon">⚔️</div><div class="slot-name">武器</div></div>
+            <div class="equip-slot" id="slot-offhand" onclick="unequip('offhand')"><div class="slot-icon">🛡️</div><div class="slot-name">防具</div></div>
+        </div>
+
+        <div class="section-title">📦 背包 (INVENTORY)</div>
+        <div id="inventory-list" class="inv-list" style="padding-bottom:20px;"></div>
+    </div>
+
+    <div id="tab-battle" class="content tab-page">
+        <div style="text-align:center; margin-top:10px;">
+            <div id="fx-layer"></div>
+            <div style="font-size:6rem; filter:drop-shadow(0 0 30px #e74c3c);" id="boss-sprite">👹</div>
+            <div style="font-family:var(--font-title); color:var(--primary); font-size:1.4rem; margin:5px 0;">
+                <span id="enemy-name">DEMON</span> <span style="font-size:1rem; color:#aaa;">Lv.<span id="enemy-level">1</span></span>
+            </div>
+            
+            <div style="width:100%; height:12px; background:#111; border:1px solid #444; border-radius:2px; overflow:hidden; margin-bottom:2px;">
+                <div id="boss-hp-bar" style="width:100%; height:100%; background:#c0392b; transition:width 0.3s;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#aaa; margin-bottom:15px;">
+                <span>ENEMY</span><span id="boss-hp-text"></span>
+            </div>
+
+            <div style="width:100%; height:8px; background:#111; border:1px solid #444; border-radius:2px; overflow:hidden;">
+                <div id="player-hp-bar" style="width:100%; height:100%; background:#27ae60; transition:width 0.3s;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#aaa;">
+                <span>PLAYER</span><span id="player-hp-text"></span>
+            </div>
+            <div id="battle-status" style="height:20px; color:#f1c40f; font-size:0.8rem; font-weight:bold; margin-top:5px;"></div>
+        </div>
+
+        <div id="quiz-area" style="margin-top:10px;">
+            <div style="text-align:center; padding:30px;">
+                <button class="start-btn" onclick="startBattle()">尋找獵物</button>
+            </div>
+        </div>
+
+        <div id="battle-tools" style="display:none; justify-content:center; gap:15px; margin-top:15px;">
+            <button class="start-btn" style="padding:10px; font-size:0.9rem; background:#34495e;" onclick="usePotion()">🧪 補血 (<span id="btn-potion-count">0</span>)</button>
+            <button class="start-btn" style="padding:10px; font-size:0.9rem; background:#34495e;" onclick="useShield()">🛡️ 護盾 (<span id="btn-shield-count">0</span>)</button>
+        </div>
+    </div>
+
+    <div id="tab-gacha" class="content tab-page">
+        <div style="text-align:center; padding-top:40px;">
+            <div style="font-size:7rem; margin-bottom:20px; filter:drop-shadow(0 0 30px var(--accent));">🎁</div>
+            <h2 style="font-family:var(--font-title); color:var(--accent);">MYSTERY BOX</h2>
+            <p style="color:#7f8fa6; margin-bottom:30px;">100 Gems / Pull<br>隨機獲得 8 種部位裝備</p>
+            <button class="start-btn" onclick="pullGacha()">OPEN BOX</button>
+        </div>
+    </div>
+
+    <div class="nav-bar">
+        <button class="nav-btn active" onclick="switchTab('char')"><div class="nav-icon">👤</div>獵人</button>
+        <button class="nav-btn" onclick="switchTab('battle')"><div class="nav-icon">⚔️</div>戰鬥</button>
+        <button class="nav-btn" onclick="switchTab('gacha')"><div class="nav-icon">💎</div>寶庫</button>
+    </div>
+
+    <div class="modal" id="feedback-modal">
+        <div class="modal-box">
+            <h2 id="fb-title" style="font-family:var(--font-title); margin:0;">VICTORY</h2>
+            <div id="fb-word" style="font-size:3rem; font-family:'KaiTi'; margin:15px 0; color:#fff;"></div>
+            <div id="fb-pron" style="color:var(--accent); font-size:1.5rem; font-family:'KaiTi'; font-weight:bold;"></div>
+            <a id="fb-link" href="#" target="_blank" style="display:block; margin:15px auto; color:#3498db; text-decoration:none;">📖 詳細解釋</a>
+            <button class="start-btn" style="width:100%; padding:10px;" onclick="nextQuestion()">下一波</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Data & Config ---
+    let QUESTIONS = [];
+    let activeQuestionPool = [];
+    let timerInterval;
+    let timeLeft = 30;
+
+    // 8個部位設定
+    const SLOT_TYPES = ['head', 'body', 'gloves', 'legs', 'feet', 'accessory', 'weapon', 'offhand'];
+    const SLOT_CONFIG = {
+        head: { icon:'⛑️', name:'頭部', base:3 },
+        body: { icon:'👕', name:'身體', base:5 },
+        gloves: { icon:'🧤', name:'手套', base:2 },
+        legs: { icon:'👖', name:'褲子', base:4 },
+        feet: { icon:'👢', name:'鞋子', base:2 },
+        accessory: { icon:'💍', name:'飾品', base:0 }, // Special handling (Crit)
+        weapon: { icon:'⚔️', name:'武器', base:10 },
+        offhand: { icon:'🛡️', name:'防具', base:4 }
+    };
+
+    let player = { 
+        gems: 100, xp: 0, level: 1, 
+        inventory: [], // Only equipment
+        equipped: {}, // Keyed by SLOT_TYPES
+        potions: 3, shields: 1 // Consumables
+    };
+    
+    let battle = { active: false, bossHp: 100, maxHp: 100, playerHp: 100, monsterType: 'minion', monsterLvl: 1, shieldTurns: 0 };
+
+    // Monster System (V26)
+    const MONSTER_TIERS = {
+        minion: { name: '雜魚', lvlMod: 0, hpMult: 1, xpMult: 1, color: '#95a5a6', icon: '🐟', chance: 40 },
+        small: { name: '小怪', lvlMod: 2, hpMult: 1.5, xpMult: 2, color: '#2ecc71', icon: '🐺', chance: 30 },
+        medium: { name: '中等怪', lvlMod: 3, hpMult: 2.5, xpMult: 5, color: '#3498db', icon: '👹', chance: 20 },
+        miniboss: { name: '小王', lvlMod: 5, hpMult: 5, xpMult: 15, color: '#9b59b6', icon: '💀', chance: 8 },
+        boss: { name: '魔王', lvlMod: 7, hpMult: 10, xpMult: 50, color: '#e74c3c', icon: '👑', chance: 2 }
+    };
+
+    const RARITY = {
+        common: { c:'#95a5a6', m:1, n:'普通' },
+        rare: { c:'#3498db', m:1.5, n:'稀有' },
+        epic: { c:'#9b59b6', m:2.5, n:'史詩' },
+        legendary: { c:'#e74c3c', m:4, n:'傳說' }
+    };
+
+    // Item Names Generator
+    const ITEM_NAMES = {
+        head: ['皮帽', '鐵盔', '戰術頭盔', '龍骨盔'],
+        body: ['布衣', '鎖子甲', '秘銀鎧', '惡魔皮甲'],
+        gloves: ['工作手套', '戰鬥拳套', '刺客護腕', '泰坦護手'],
+        legs: ['亞麻褲', '護脛甲', '遊俠腿甲', '暗影護腿'],
+        feet: ['草鞋', '戰鬥靴', '疾風靴', '重金屬靴'],
+        accessory: ['銅戒', '幸運符', '賢者石', '龍之心'],
+        weapon: ['鐵劍', '戰斧', '破魂槍', '雷神鎚'],
+        offhand: ['木盾', '圓盾', '塔盾', '聖騎士盾']
+    };
+
+    // --- Init ---
+    window.onload = function() {
+        if (typeof window.MOE_DATA_STRING !== 'undefined') {
+            parseData(window.MOE_DATA_STRING);
+            document.getElementById('status-text').innerText = "✅ 系統就緒";
+        } else {
+            document.getElementById('status-text').innerText = "⚠️ 找不到資料檔";
+            document.getElementById('status-text').style.color = "red";
+        }
+    };
+
+    function parseData(rawText) {
+        const lines = rawText.trim().split('\n');
+        let allAnswers = [];
+        lines.forEach(line => {
+            let parts = line.split('|');
+            if(parts.length >= 3) {
+                let ans = parts[2].replace(/1/g,'').replace(/2/g,'ˊ').replace(/3/g,'ˇ').replace(/4/g,'ˋ').replace(/5/g,'˙');
+                allAnswers.push(ans);
+            }
+        });
+        QUESTIONS = lines.map(line => {
+            let [t, q, a, oStr] = line.split('|');
+            let rawOpts = oStr ? oStr.split(',') : [];
+            const fix = s => s.replace(/1/g,'').replace(/2/g,'ˊ').replace(/3/g,'ˇ').replace(/4/g,'ˋ').replace(/5/g,'˙');
+            if(t==='2'){ a=fix(a); rawOpts=rawOpts.map(x=>fix(x)); } else { q=fix(q); }
+            let uniqueOpts = new Set([a]);
+            for(let o of rawOpts) if(o && o !== a) uniqueOpts.add(o);
+            while(uniqueOpts.size < 4) uniqueOpts.add(allAnswers[Math.floor(Math.random() * allAnswers.length)]);
+            return { t: parseInt(t), q, a, o: Array.from(uniqueOpts).sort(() => Math.random() - 0.5) };
+        }).filter(x => x);
+    }
+
+    function initGameSafe() {
+        if(QUESTIONS.length === 0) { alert("無題庫"); return; }
+        document.getElementById('cover-screen').style.display='none';
+        document.getElementById('app-ui').style.display='flex';
+        AudioEngine.init();
+        loadData();
+        updateUI();
+    }
+
+    function hardReset() { localStorage.removeItem('rpg_v27_save'); location.reload(); }
+    function saveData() { localStorage.setItem('rpg_v27_save', JSON.stringify({player, battle})); }
+    
+    function loadData() { 
+        const d=JSON.parse(localStorage.getItem('rpg_v27_save')); 
+        if(d && d.player){
+            player = {...player, ...d.player};
+            if(!player.potions) player.potions = 3;
+            if(!player.shields) player.shields = 1;
+            battle = d.battle;
+            battle.shieldTurns = 0;
+        }
+    }
+
+    // --- Stats Logic ---
+    function getStats() {
+        let s = { atk:10, def:0, maxHp:100, crit:5, dodge:5 };
+        
+        // Level Bonus
+        s.atk += player.level * 2;
+        s.maxHp += player.level * 10;
+        s.def += Math.floor(player.level * 0.5);
+
+        // Equipment Bonus
+        SLOT_TYPES.forEach(slot => {
+            const item = player.equipped[slot];
+            if(item) {
+                // Different slots give different primary stats
+                if(slot === 'weapon') s.atk += item.val;
+                else if(slot === 'accessory') s.crit += Math.floor(item.val / 2); // Accessory gives Crit
+                else if(slot === 'feet') s.dodge += Math.floor(item.val / 3); // Boots give Dodge
+                else if(slot === 'offhand') s.def += item.val;
+                else {
+                    s.def += Math.ceil(item.val * 0.6);
+                    s.maxHp += item.val * 2;
+                }
+            }
+        });
+
+        // Caps
+        s.crit = Math.min(80, s.crit);
+        s.dodge = Math.min(60, s.dodge);
+        return s;
+    }
+
+    // --- Inventory System ---
+    function createItem() {
+        const slot = SLOT_TYPES[Math.floor(Math.random() * SLOT_TYPES.length)];
+        const rKey = Math.random()>0.95?'legendary':Math.random()>0.8?'epic':Math.random()>0.6?'rare':'common';
+        const rarity = RARITY[rKey];
+        const config = SLOT_CONFIG[slot];
+        
+        // Base Value Calculation
+        let baseVal = config.base;
+        if(baseVal === 0) baseVal = 5; // For accessory default base logic
+        const val = Math.floor(baseVal * rarity.m * (0.8 + Math.random()*0.5) + (player.level * 0.5));
+
+        const nameList = ITEM_NAMES[slot];
+        const baseName = nameList[Math.floor(Math.random() * nameList.length)];
+
+        return {
+            id: Date.now() + Math.random(),
+            slot: slot,
+            name: (rKey==='common'?'':rarity.n) + baseName,
+            rarity: rKey,
+            val: val,
+            icon: config.icon
+        };
+    }
+
+    function equip(id) {
+        const item = player.inventory.find(x => x.id === id);
+        if(!item) return;
+        
+        // Remove from inventory
+        player.inventory = player.inventory.filter(x => x.id !== id);
+        
+        // Check if something is already equipped
+        if(player.equipped[item.slot]) {
+            player.inventory.push(player.equipped[item.slot]);
+        }
+        
+        // Equip
+        player.equipped[item.slot] = item;
+        AudioEngine.sfx.equip();
+        saveData(); updateUI();
+    }
+
+    function unequip(slot) {
+        if(player.equipped[slot]) {
+            player.inventory.push(player.equipped[slot]);
+            player.equipped[slot] = null;
+            saveData(); updateUI();
+        }
+    }
+
+    function usePotion() {
+        if(!battle.active) return;
+        if(player.potions > 0) {
+            player.potions--;
+            const stats = getStats();
+            const heal = Math.floor(stats.maxHp * 0.5);
+            battle.playerHp = Math.min(stats.maxHp, battle.playerHp + heal);
+            showFloatText(`+${heal} HP`, "#2ecc71");
+            AudioEngine.sfx.equip();
+            updateBattleUI(); updateUI(); saveData();
+        } else { alert("藥水不足！"); }
+    }
+
+    function useShield() {
+        if(!battle.active) return;
+        if(player.shields > 0) {
+            player.shields--;
+            battle.shieldTurns = 2;
+            showFloatText("SHIELD UP!", "#3498db");
+            AudioEngine.sfx.equip();
+            updateBattleUI(); updateUI(); saveData();
+        } else { alert("護盾不足！"); }
+    }
+
+    // --- Battle Core (V26 Logic) ---
+    function spawnMonster() {
+        const rand = Math.random() * 100;
+        let tierKey = 'minion';
+        let acc = 0;
+        for (const [key, data] of Object.entries(MONSTER_TIERS)) {
+            acc += data.chance;
+            if (rand <= acc) { tierKey = key; break; }
+        }
+        const mData = MONSTER_TIERS[tierKey];
+        const mLvl = player.level + mData.lvlMod;
+        const mBaseHp = 25 * mLvl * mData.hpMult;
+
+        battle = {
+            active: true,
+            bossHp: mBaseHp, maxHp: mBaseHp,
+            playerHp: battle.playerHp > 0 ? battle.playerHp : getStats().maxHp,
+            monsterType: tierKey, monsterLvl: mLvl, shieldTurns: 0
+        };
+        updateBattleUI(); loadQuestion();
+    }
+
+    function startBattle() {
+        if(activeQuestionPool.length === 0) activeQuestionPool = [...QUESTIONS];
+        spawnMonster();
+    }
+
+    function loadQuestion() {
+        if(battle.bossHp <= 0 || battle.playerHp <= 0) return;
+        if(activeQuestionPool.length === 0) activeQuestionPool = [...QUESTIONS];
+        const idx = Math.floor(Math.random() * activeQuestionPool.length);
+        const q = activeQuestionPool.splice(idx, 1)[0]; 
+
+        let qHTML = q.q.replace(/「(.*?)」/g, '<span style="color:var(--accent); border-bottom:1px solid var(--accent);">$1</span>');
+        document.getElementById('quiz-area').innerHTML = `
+            <div class="quiz-panel">
+                <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.8rem; margin-bottom:5px;">
+                    <span>${q.t===1?'注音 ➤ 國字':'國字 ➤ 注音'}</span>
+                    <span>剩餘: ${activeQuestionPool.length}</span>
+                </div>
+                <div class="timer-container"><div class="timer-fill" id="timer-bar"></div></div>
+                <div style="text-align:right; font-size:0.8rem; color:#aaa; margin-bottom:10px;" id="timer-text">30s</div>
+                
+                <div style="text-align:center; font-size:1.8rem; margin:10px 0; min-height:50px; display:flex; align-items:center; justify-content:center;">${qHTML}</div>
+                <div>${q.o.map(o=>`<button class="opt-btn" onclick="handleAns(this,'${o}','${q.a}','${q.q}',${q.t})">${o}</button>`).join('')}</div>
+            </div>`;
+        document.getElementById('battle-tools').style.display = 'flex';
+        startTimer(q.q, q.a, q.t);
+    }
+
+    function startTimer(qText, ans, type) {
+        clearInterval(timerInterval);
+        timeLeft = 30;
+        const bar = document.getElementById('timer-bar');
+        const txt = document.getElementById('timer-text');
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            if (bar) bar.style.width = (timeLeft / 30 * 100) + "%";
+            if (txt) txt.innerText = timeLeft + "s";
+            if(timeLeft<=0) {
+                clearInterval(timerInterval);
+                handleTimeout(qText, ans, type);
+            }
+        }, 1000);
+    }
+
+    function handleTimeout(qText, ans, type) {
+        document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
+        AudioEngine.sfx.wrong();
+        showFloatText("TIME OUT!", "#e74c3c");
+        monsterAttack();
+        updateBattleUI();
+        setTimeout(()=>checkWinLoss(false, "", ans, qText, type), 800);
+    }
+
+    function handleAns(btn, c, a, qText, type) {
+        clearInterval(timerInterval);
+        document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
+        const correct = c===a;
+        const stats = getStats();
+        
+        if(correct) {
+            btn.style.background = "#27ae60"; 
+            let isCrit = Math.random() * 100 < stats.crit;
+            let dmg = Math.floor(stats.atk * (isCrit ? 2 : 1));
+            battle.bossHp -= dmg;
+            AudioEngine.sfx.win();
+            showFloatText(isCrit ? `CRIT ${dmg}!` : `${dmg}`, isCrit ? "#f1c40f" : "#fff");
+        } else {
+            btn.style.background = "#c23616"; 
+            monsterAttack();
+        }
+
+        if (battle.shieldTurns > 0) battle.shieldTurns--;
+        updateBattleUI();
+        setTimeout(()=>checkWinLoss(correct, c, a, qText, type), 500);
+    }
+
+    function monsterAttack() {
+        const stats = getStats();
+        let blocked = false;
+        if (battle.shieldTurns > 0) { blocked = true; showFloatText("BLOCKED!", "#3498db"); } 
+        else if (Math.random() * 100 < stats.dodge) { blocked = true; showFloatText("DODGE!", "#9b59b6"); }
+
+        if (!blocked) {
+            let baseDmg = battle.monsterLvl * 6; // Slightly higher base dmg for V27 balance
+            let incoming = Math.max(1, baseDmg - Math.floor(stats.def / 3)); // Defense scaling
+            battle.playerHp -= incoming;
+            AudioEngine.sfx.wrong();
+            showFloatText(`-${incoming}`, "#e74c3c");
+        }
+    }
+
+    function checkWinLoss(correct, c, a, qText, type) {
+        if (battle.bossHp <= 0) winBattle();
+        else if (battle.playerHp <= 0) loseBattle();
+        else showFb(correct, c, a, qText, type);
+    }
+
+    function winBattle() {
+        const mData = MONSTER_TIERS[battle.monsterType];
+        let xpGain = mData.xpMult * 10;
+        player.gems += Math.floor(xpGain / 2);
+        
+        // Random chance for potion drop
+        if(Math.random() > 0.8) {
+             player.potions++;
+             showFloatText("+POTION", "#2ecc71");
+        }
+
+        addXp(xpGain);
+        alert(`勝利！\n獲得 ${xpGain} 經驗, ${Math.floor(xpGain/2)} 寶石`);
+        
+        // Auto heal 20%
+        const stats = getStats();
+        battle.playerHp = Math.min(stats.maxHp, battle.playerHp + Math.floor(stats.maxHp * 0.2));
+        spawnMonster();
+    }
+
+    function loseBattle() {
+        alert("你倒下了...");
+        const stats = getStats();
+        battle.playerHp = stats.maxHp; // Full restore on loss
+        startBattle();
+    }
+
+    function addXp(amount) {
+        player.xp += amount;
+        let req = player.level * 100;
+        if(player.xp >= req) {
+            player.xp -= req;
+            player.level++;
+            showFloatText("LEVEL UP!", "#f1c40f");
+            AudioEngine.sfx.equip();
+            battle.playerHp = getStats().maxHp;
+        }
+        saveData(); updateUI();
+    }
+
+    // --- UI & Helpers ---
+    function updateBattleUI() {
+        document.getElementById('boss-hp-bar').style.width = Math.max(0,(battle.bossHp/battle.maxHp)*100)+'%';
+        document.getElementById('boss-hp-text').innerText = Math.ceil(battle.bossHp)+"/"+Math.ceil(battle.maxHp);
+        const stats = getStats();
+        document.getElementById('player-hp-bar').style.width = Math.max(0,(battle.playerHp/stats.maxHp)*100)+'%';
+        document.getElementById('player-hp-text').innerText = Math.ceil(battle.playerHp)+"/"+stats.maxHp;
+        
+        if(battle.active) {
+            const mData = MONSTER_TIERS[battle.monsterType];
+            document.getElementById('boss-sprite').innerText = mData.icon;
+            document.getElementById('boss-sprite').style.filter = `drop-shadow(0 0 30px ${mData.color})`;
+            document.getElementById('boss-hp-bar').style.background = mData.color;
+            document.getElementById('enemy-name').innerText = mData.name;
+            document.getElementById('enemy-name').style.color = mData.color;
+            document.getElementById('enemy-level').innerText = battle.monsterLvl;
+            
+            document.getElementById('btn-potion-count').innerText = player.potions;
+            document.getElementById('btn-shield-count').innerText = player.shields;
+            document.getElementById('battle-status').innerText = battle.shieldTurns > 0 ? `🛡️ 無敵 (${battle.shieldTurns})` : "";
+        }
+    }
+
+    function updateUI() {
+        // Top Bar
+        document.getElementById('ui-gems').innerText = player.gems;
+        document.getElementById('ui-lvl').innerText = player.level;
+        document.getElementById('ui-xp-bar').style.width = ((player.xp / (player.level*100))*100) + '%';
+        document.getElementById('ui-xp-text').innerText = `${player.xp}/${player.level*100}`;
+
+        // Consumables in Hero Tab
+        document.getElementById('inv-potion').innerText = player.potions;
+        document.getElementById('inv-shield').innerText = player.shields;
+
+        // Stats
+        const s = getStats();
+        document.getElementById('stat-atk').innerText = s.atk;
+        document.getElementById('stat-def').innerText = s.def;
+        document.getElementById('stat-hp').innerText = s.maxHp;
+        document.getElementById('stat-crit').innerText = s.crit+'%';
+        document.getElementById('stat-dodge').innerText = s.dodge+'%';
+
+        // Equipment Grid
+        SLOT_TYPES.forEach(slot => {
+            const el = document.getElementById(`slot-${slot}`);
+            const item = player.equipped[slot];
+            if(item) {
+                el.classList.add('slot-equipped');
+                el.style.borderColor = RARITY[item.rarity].c;
+                el.querySelector('.slot-icon').innerText = item.icon;
+                el.querySelector('.slot-name').innerText = item.name;
+                el.querySelector('.slot-name').style.color = RARITY[item.rarity].c;
+            } else {
+                el.classList.remove('slot-equipped');
+                el.style.borderColor = '#444';
+                el.querySelector('.slot-icon').innerText = SLOT_CONFIG[slot].icon;
+                el.querySelector('.slot-name').innerText = SLOT_CONFIG[slot].name;
+                el.querySelector('.slot-name').style.color = '#7f8fa6';
+            }
+        });
+
+        // Inventory List (Only Equipment)
+        const l = document.getElementById('inventory-list'); l.innerHTML = '';
+        if(player.inventory.length === 0) l.innerHTML = '<div style="color:#555; text-align:center; padding:10px;">背包空空如也</div>';
+        
+        player.inventory.forEach(i => {
+            const d = document.createElement('div'); 
+            d.className = 'inv-item'; 
+            d.style.borderLeftColor = RARITY[i.rarity].c;
+            d.innerHTML = `
+                <div style="font-size:1.5rem; margin-right:10px;">${i.icon}</div>
+                <div style="flex:1;">
+                    <div style="color:${RARITY[i.rarity].c}; font-weight:bold;">${i.name}</div>
+                    <div style="font-size:0.7rem; color:#aaa;">${SLOT_CONFIG[i.slot].name} | Val: ${i.val}</div>
+                </div>
+                <button class="btn-action" onclick="equip(${i.id})">裝備</button>
+            `;
+            l.appendChild(d);
+        });
+    }
+
+    function showFb(correct, c, a, qText, type) {
+        const m=document.getElementById('feedback-modal'), t=document.getElementById('fb-title'), w=document.getElementById('fb-word'), p=document.getElementById('fb-pron');
+        t.innerText = correct ? "VICTORY" : "NEXT"; t.style.color = correct ? "#2ecc71" : "#aaa";
+        let search = type===1 ? a : qText.replace(/「|」/g,'');
+        w.innerText = search; p.innerText = type===1 ? qText : a;
+        document.getElementById('fb-link').href = `https://dict.revised.moe.edu.tw/search.jsp?md=1&word=${encodeURIComponent(search)}`;
+        m.style.display='flex';
+    }
+    
+    function nextQuestion() { document.getElementById('feedback-modal').style.display='none'; loadQuestion(); }
+    function switchTab(t) {
+        document.querySelectorAll('.tab-page').forEach(e=>e.classList.remove('active'));
+        document.getElementById('tab-'+t).classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    }
+    function showFloatText(txt,col){const el=document.createElement('div');el.className='float-txt';el.innerText=txt;el.style.color=col;document.body.appendChild(el);setTimeout(()=>el.remove(),800);}
+    
+    function pullGacha() {
+        if(player.gems < 100) return alert("寶石不足 (需 100)");
+        player.gems -= 100;
+        const item = createItem();
+        player.inventory.push(item);
+        AudioEngine.sfx.equip();
+        saveData(); updateUI();
+        alert(`獲得：${item.name} (數值: ${item.val})`);
+    }
+
+    // Audio
+    const AudioEngine = {
+        ctx: null, isMuted: false,
+        init: function() { this.ctx = new (window.AudioContext||window.webkitAudioContext)(); },
+        toggle: function() { this.isMuted=!this.isMuted; document.getElementById('sound-btn').innerText=this.isMuted?'🔇':'🔊'; },
+        playTone: function(f,t,d) { if(this.isMuted||!this.ctx)return; const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type=t;o.frequency.value=f;g.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+d);o.connect(g);g.connect(this.ctx.destination);o.start();o.stop(this.ctx.currentTime+d); },
+        sfx: { win:()=>{AudioEngine.playTone(600,'sine',0.3)}, wrong:()=>{AudioEngine.playTone(150,'sawtooth',0.4)}, equip:()=>{AudioEngine.playTone(800,'triangle',0.1)} }
+    };
+    function toggleMute() { AudioEngine.toggle(); }
+</script>
+</body>
+</html>
