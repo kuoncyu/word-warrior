@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>字靈獵人：經濟交易版 (V31)</title>
+    <title>字靈獵人：戰歌版 (V33)</title>
     <script src="moe_data.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Cinzel:wght@700&display=swap');
@@ -60,6 +60,7 @@
             box-shadow: 0 0 15px rgba(194, 54, 22, 0.5); border-radius: 4px;
         }
         .start-btn:active { transform: scale(0.96); filter: brightness(0.8); }
+        .btn-secondary { background: #34495e; box-shadow: none; border-color: #57606f; }
 
         /* Stats & Equipment */
         .hero-summary { display:flex; align-items:center; gap:15px; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid #333; }
@@ -71,8 +72,7 @@
         .stat-box { background:rgba(0,0,0,0.3); padding:10px; border-radius:6px; margin-bottom:15px; border:1px solid #333; }
         .stat-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px; }
         .stat-row:last-child { border: none; margin-bottom: 0; }
-        .luck-val { color: var(--luck); font-weight: bold; text-shadow: 0 0 5px var(--luck); }
-
+        
         .equip-grid { 
             display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; 
             background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #333;
@@ -92,7 +92,6 @@
         .btn-action { padding: 6px 10px; border: 1px solid #555; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.75rem; min-width: 60px; }
         .btn-equip { background: #353b48; }
         .btn-sell { background: #2c3e50; border-color: #c0392b; color: #e74c3c; }
-        .item-stat-text { color: var(--accent); font-size: 0.75rem; font-weight: bold; }
 
         /* Battle Start Screen */
         .battle-prep-panel {
@@ -100,7 +99,6 @@
         }
         .monster-rates-table { width: 100%; margin: 15px 0; border-collapse: collapse; font-size: 0.9rem; }
         .monster-rates-table td { padding: 8px; border-bottom: 1px solid #333; text-align: left; }
-        .monster-rates-table tr:last-child td { border-bottom: none; }
         .rate-bar-bg { width: 60px; height: 4px; background: #333; display: inline-block; vertical-align: middle; margin-left: 5px; border-radius: 2px; }
         .rate-bar-fill { height: 100%; border-radius: 2px; }
 
@@ -122,12 +120,9 @@
         .nav-btn { flex: 1; background: none; border: none; color: #555; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; }
         .nav-btn.active { color: var(--primary); background: rgba(194, 54, 22, 0.1); }
 
-        /* Gacha */
-        .gacha-luck-rate { font-size: 0.9rem; color: var(--luck); margin-bottom: 10px; font-weight: bold; }
-        
         /* Modal */
         .modal { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; }
-        .modal-box { background: #1e272e; width: 85%; max-width: 400px; padding: 30px; border: 1px solid var(--primary); text-align: center; border-radius: 10px; }
+        .modal-box { background: #1e272e; width: 85%; max-width: 400px; padding: 30px; border: 1px solid var(--primary); text-align: center; border-radius: 10px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         .float-txt { position: absolute; left: 50%; top: 40%; transform: translateX(-50%); font-family: var(--font-title); font-weight:bold; pointer-events: none; animation: popUp 0.8s forwards; z-index: 150; text-shadow: 2px 2px 0 #000; }
         @keyframes popUp { 0%{opacity:0; transform:translate(-50%,0) scale(0.5);} 20%{opacity:1; transform:translate(-50%,-50px) scale(1.5);} 100%{opacity:0; transform:translate(-50%,-100px) scale(1);} }
 
@@ -141,7 +136,7 @@
 <div id="cover-screen">
     <div style="font-size:5rem; margin-bottom: 10px; filter: drop-shadow(0 0 20px var(--primary));">🔥</div>
     <div style="font-family: var(--font-title); font-size: 3rem; color: var(--primary); letter-spacing: 3px;">WORD<br>WARRIOR</div>
-    <p style="color:#7f8fa6; letter-spacing: 2px;">V31 TRADING UPDATE</p>
+    <p style="color:#7f8fa6; letter-spacing: 2px;">V33 EPIC AUDIO</p>
     <div id="status-text" style="color:#2ecc71; margin: 15px 0;">載入中...</div>
     <button class="start-btn" onclick="initGameSafe()">ENTER WORLD</button>
     <div style="margin-top:20px; color:#555; cursor:pointer; text-decoration:underline; font-size:0.8rem;" onclick="hardReset()">重置遊戲 (Reset)</div>
@@ -169,20 +164,7 @@
             <div class="stat-row"><span>❤️ 生命 (HP)</span><span id="stat-hp" style="color:#2ecc71">0</span></div>
             <div class="stat-row"><span>⚡ 暴擊 (CRIT)</span><span id="stat-crit" style="color:#f1c40f">0%</span></div>
             <div class="stat-row"><span>💨 閃避 (DODGE)</span><span id="stat-dodge" style="color:#9b59b6">0%</span></div>
-            <div class="stat-row"><span>🍀 幸運 (LUCK)</span><span id="stat-luck" class="luck-val">0%</span></div>
-        </div>
-
-        <div class="consumable-row">
-            <div class="consumable-item">
-                <div style="font-size:1.4rem; margin-right:8px;">🧪</div>
-                <div><div style="font-size:0.9rem; font-weight:bold;">藥水</div></div>
-                <div class="con-qty">x<span id="inv-potion">0</span></div>
-            </div>
-            <div class="consumable-item">
-                <div style="font-size:1.4rem; margin-right:8px;">🛡️</div>
-                <div><div style="font-size:0.9rem; font-weight:bold;">護盾</div></div>
-                <div class="con-qty">x<span id="inv-shield">0</span></div>
-            </div>
+            <div class="stat-row"><span>🍀 幸運 (LUCK)</span><span id="stat-luck" style="color:var(--luck)">0%</span></div>
         </div>
 
         <div class="equip-grid">
@@ -204,18 +186,15 @@
             <div style="font-size:4rem; text-align:center; margin-bottom:10px;">⚔️</div>
             <div style="font-family:var(--font-title); font-size:1.5rem; text-align:center; color:var(--primary);">HUNTING GROUNDS</div>
             <div style="text-align:center; color:#7f8fa6; font-size:0.8rem; margin-bottom:20px;">準備進入危險區域</div>
-
             <div class="battle-prep-panel">
-                <div style="color:#fff; font-weight:bold; border-bottom:1px solid #555; padding-bottom:5px;">👾 怪物情報 (Monster Data)</div>
+                <div style="color:#fff; font-weight:bold; border-bottom:1px solid #555; padding-bottom:5px;">👾 區域威脅度 (Threat)</div>
                 <table class="monster-rates-table" id="monster-rates-list"></table>
             </div>
-            
             <button class="start-btn" onclick="startBattleSequence()">⚔️ 開始狩獵 (START)</button>
         </div>
 
         <div id="battle-active-screen" style="display:none;">
             <div style="text-align:center; margin-top:5px;">
-                <div id="fx-layer"></div>
                 <div style="font-size:6rem; filter:drop-shadow(0 0 30px #e74c3c); transition:0.2s;" id="boss-sprite">👹</div>
                 <div style="font-family:var(--font-title); color:var(--primary); font-size:1.4rem;">
                     <span id="enemy-name">DEMON</span> <span style="font-size:1rem; color:#aaa;">Lv.<span id="enemy-level">1</span></span>
@@ -247,7 +226,7 @@
         <div style="text-align:center; padding-top:40px;">
             <div style="font-size:7rem; margin-bottom:20px; filter:drop-shadow(0 0 30px var(--luck)); animation: float 3s infinite;">🎁</div>
             <h2 style="font-family:var(--font-title); color:var(--accent);">LUCKY BOX</h2>
-            <div class="gacha-luck-rate">當前幸運加成: +<span id="gacha-luck-val">0</span>%</div>
+            <div style="font-size: 0.9rem; color: var(--luck); margin-bottom: 10px; font-weight: bold;">幸運加成: +<span id="gacha-luck-val">0</span>%</div>
             <p style="color:#7f8fa6; margin-bottom:30px; font-size:0.9rem;">100 Gems / Pull<br>飾品可提升幸運，增加獲得傳說裝備機率！</p>
             <button class="start-btn" style="background:var(--luck); color:#000;" onclick="pullGacha()">OPEN (100💎)</button>
         </div>
@@ -261,11 +240,26 @@
 
     <div class="modal" id="feedback-modal">
         <div class="modal-box">
-            <h2 id="fb-title" style="font-family:var(--font-title); margin:0;">VICTORY</h2>
+            <h2 id="fb-title" style="font-family:var(--font-title); margin:0;">NEXT</h2>
             <div id="fb-word" style="font-size:3rem; font-family:'KaiTi'; margin:15px 0; color:#fff;"></div>
             <div id="fb-pron" style="color:var(--accent); font-size:1.5rem; font-family:'KaiTi'; font-weight:bold;"></div>
             <a id="fb-link" href="#" target="_blank" style="display:block; margin:15px auto; color:#3498db; text-decoration:none;">📖 詳細解釋</a>
-            <button class="start-btn" style="width:100%; padding:10px;" onclick="nextQuestion()">下一波</button>
+            <button class="start-btn" onclick="nextQuestion()">下一波攻擊</button>
+        </div>
+    </div>
+
+    <div class="modal" id="battle-result-modal">
+        <div class="modal-box">
+            <div style="font-size:4rem; margin-bottom:10px;">🏆</div>
+            <h2 style="font-family:var(--font-title); color:#f1c40f; margin:0 0 10px 0; font-size:2rem;">VICTORY</h2>
+            <p style="color:#aaa; font-size:0.9rem;">戰鬥勝利！獲得戰利品：</p>
+            <div id="loot-info" style="font-size:1.2rem; color:#fff; font-weight:bold; margin-bottom:20px; padding:15px; background:rgba(255,255,255,0.05); border-radius:8px;">
+                XP +100<br>💎 +50
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button class="start-btn" onclick="continueBattle()">⚔️ 繼續狩獵 (Next Battle)</button>
+                <button class="start-btn btn-secondary" onclick="exitBattle()">🏠 返回營地 (Main Menu)</button>
+            </div>
         </div>
     </div>
 </div>
@@ -289,39 +283,27 @@
         offhand: { icon:'🛡️', name:'防具', base:4 }
     };
 
-    let player = { 
-        gems: 100, xp: 0, level: 1, 
-        inventory: [], equipped: {}, 
-        potions: 3, shields: 1 
-    };
+    let player = { gems: 100, xp: 0, level: 1, inventory: [], equipped: {}, potions: 3, shields: 1 };
     
-    let battle = { active: false, bossHp: 100, maxHp: 100, playerHp: 100, monsterType: 'minion', monsterLvl: 1, shieldTurns: 0 };
+    const MONSTER_NAMES = {
+        minion: ['史萊姆', '蝸牛怪', '憤怒小雞', '綠毛蟲', '小石怪', '吸血蝙蝠', '寶箱怪', '蘑菇人'],
+        small: ['哥布林', '野豬怪', '骷髏士兵', '蜥蜴人', '荒野盜賊', '叢林狼', '巨鼠', '漂浮之眼'],
+        medium: ['白毛猩猩', '沼澤女巫', '食人魔', '雙頭蛇', '石像鬼', '鐵甲犀牛', '食人花', '幽靈騎士'],
+        miniboss: ['山豬首領', '赤色惡鬼', '巨型蜘蛛', '獨眼巨人', '詛咒騎士', '死靈法師', '牛頭人', '暗影刺客'],
+        boss: ['深淵惡靈', '吸血鬼王', '骸骨巨龍', '混沌炎魔', '深淵領主', '墮落天使', '遠古巨獸']
+    };
 
     const MONSTER_TIERS = {
-        minion: { name: '雜魚', lvlMod: 0, hpMult: 1, xpMult: 1, color: '#95a5a6', icon: '🐟', chance: 40 },
-        small: { name: '小怪', lvlMod: 2, hpMult: 1.5, xpMult: 2, color: '#2ecc71', icon: '🐺', chance: 30 },
-        medium: { name: '中等怪', lvlMod: 3, hpMult: 2.5, xpMult: 5, color: '#3498db', icon: '👹', chance: 20 },
-        miniboss: { name: '小王', lvlMod: 5, hpMult: 5, xpMult: 15, color: '#9b59b6', icon: '💀', chance: 8 },
-        boss: { name: '魔王', lvlMod: 7, hpMult: 10, xpMult: 50, color: '#e74c3c', icon: '👑', chance: 2 }
+        minion: { label: '雜魚級', lvlMod: 0, hpMult: 1, xpMult: 1, color: '#95a5a6', icon: '🐟', chance: 40 },
+        small: { label: '小怪級', lvlMod: 2, hpMult: 1.5, xpMult: 2, color: '#2ecc71', icon: '🐺', chance: 30 },
+        medium: { label: '中等怪', lvlMod: 3, hpMult: 2.5, xpMult: 5, color: '#3498db', icon: '👹', chance: 20 },
+        miniboss: { label: '小王級', lvlMod: 5, hpMult: 5, xpMult: 15, color: '#9b59b6', icon: '💀', chance: 8 },
+        boss: { label: '魔王級', lvlMod: 7, hpMult: 10, xpMult: 50, color: '#e74c3c', icon: '👑', chance: 2 }
     };
 
-    const RARITY = {
-        common: { c:'#95a5a6', m:1, n:'普通', basePrice: 2 },
-        rare: { c:'#3498db', m:1.5, n:'稀有', basePrice: 5 },
-        epic: { c:'#9b59b6', m:2.5, n:'史詩', basePrice: 10 },
-        legendary: { c:'#e74c3c', m:4, n:'傳說', basePrice: 20 }
-    };
-
-    const ITEM_NAMES = {
-        head: ['皮帽', '鐵盔', '戰術頭盔', '龍骨盔'],
-        body: ['布衣', '鎖子甲', '秘銀鎧', '惡魔皮甲'],
-        gloves: ['工作手套', '戰鬥拳套', '刺客護腕', '泰坦護手'],
-        legs: ['亞麻褲', '護脛甲', '遊俠腿甲', '暗影護腿'],
-        feet: ['草鞋', '戰鬥靴', '疾風靴', '重金屬靴'],
-        accessory: ['幸運草', '月光石', '幸運女神淚', '命運之輪'],
-        weapon: ['鐵劍', '戰斧', '破魂槍', '雷神鎚'],
-        offhand: ['木盾', '圓盾', '塔盾', '聖騎士盾']
-    };
+    let battle = { active: false, bossHp: 100, maxHp: 100, playerHp: 100, monsterType: 'minion', monsterName: 'Monster', monsterLvl: 1, shieldTurns: 0 };
+    const RARITY = { common: { c:'#95a5a6',m:1,n:'普通' }, rare: { c:'#3498db',m:1.5,n:'稀有' }, epic: { c:'#9b59b6',m:2.5,n:'史詩' }, legendary: { c:'#e74c3c',m:4,n:'傳說' } };
+    const ITEM_NAMES = { head:['皮帽','鐵盔','戰術盔'], body:['布衣','鎖子甲','秘銀鎧'], gloves:['工作手套','戰鬥拳套','泰坦護手'], legs:['亞麻褲','護脛甲','暗影護腿'], feet:['草鞋','戰鬥靴','疾風靴'], accessory:['幸運草','月光石','命運之輪'], weapon:['鐵劍','戰斧','雷神鎚'], offhand:['木盾','圓盾','聖騎士盾'] };
 
     // --- Init ---
     window.onload = function() {
@@ -357,16 +339,14 @@
         document.getElementById('cover-screen').style.display='none';
         document.getElementById('app-ui').style.display='flex';
         AudioEngine.init();
-        loadData();
-        renderPrepScreen();
-        updateUI();
+        loadData(); renderPrepScreen(); updateUI();
     }
 
-    function hardReset() { localStorage.removeItem('rpg_v29_save'); location.reload(); }
-    function saveData() { localStorage.setItem('rpg_v29_save', JSON.stringify({player, battle})); }
+    function hardReset() { localStorage.removeItem('rpg_v33_save'); location.reload(); }
+    function saveData() { localStorage.setItem('rpg_v33_save', JSON.stringify({player, battle})); }
     
     function loadData() { 
-        const d=JSON.parse(localStorage.getItem('rpg_v29_save')); 
+        const d=JSON.parse(localStorage.getItem('rpg_v33_save')); 
         if(d && d.player){
             player = {...player, ...d.player};
             if(!player.potions) player.potions = 3;
@@ -381,13 +361,7 @@
         table.innerHTML = '';
         for (const [key, m] of Object.entries(MONSTER_TIERS)) {
             const row = document.createElement('tr');
-            row.innerHTML = `
-                <td style="color:${m.color}; font-weight:bold; width:30%;"><span style="font-size:1.2rem; margin-right:5px;">${m.icon}</span> ${m.name}</td>
-                <td><div style="font-size:0.8rem; color:#aaa;">Lv.${player.level + m.lvlMod}</div></td>
-                <td style="text-align:right;">
-                    <span style="color:#aaa; font-size:0.8rem;">${m.chance}%</span>
-                    <div class="rate-bar-bg"><div class="rate-bar-fill" style="width:${m.chance}%; background:${m.color};"></div></div>
-                </td>`;
+            row.innerHTML = `<td style="color:${m.color}; font-weight:bold; width:35%;"><span style="font-size:1.2rem; margin-right:5px;">${m.icon}</span> ${m.label}</td><td><div style="font-size:0.8rem; color:#aaa;">Lv.${player.level + m.lvlMod}</div></td><td style="text-align:right;"><span style="color:#aaa; font-size:0.8rem;">${m.chance}%</span><div class="rate-bar-bg"><div class="rate-bar-fill" style="width:${m.chance}%; background:${m.color};"></div></div></td>`;
             table.appendChild(row);
         }
     }
@@ -395,35 +369,30 @@
     // --- Stats & Items ---
     function getStats() {
         let s = { atk:10, def:0, maxHp:100, crit:5, dodge:5, luck:0 };
-        s.atk += player.level * 2;
-        s.maxHp += player.level * 10;
-        s.def += Math.floor(player.level * 0.5);
+        s.atk += player.level * 2; s.maxHp += player.level * 10; s.def += Math.floor(player.level * 0.5);
         SLOT_TYPES.forEach(slot => {
             const item = player.equipped[slot];
             if(item) {
                 if(slot === 'weapon') s.atk += item.val;
                 else if(slot === 'offhand') s.def += item.val;
-                else if(slot === 'gloves') s.crit += Math.floor(item.val / 2);
-                else if(slot === 'feet') s.dodge += Math.floor(item.val / 3);
+                else if(slot === 'gloves') s.crit += Math.floor(item.val/2);
+                else if(slot === 'feet') s.dodge += Math.floor(item.val/3);
                 else if(slot === 'accessory') s.luck += item.val;
-                else { s.def += Math.ceil(item.val * 0.5); s.maxHp += item.val * 2; }
+                else { s.def += Math.ceil(item.val*0.5); s.maxHp += item.val*2; }
             }
         });
-        s.crit = Math.min(80, s.crit); s.dodge = Math.min(60, s.dodge); s.luck = Math.min(30, s.luck);
         return s;
     }
 
-    function createItem(luckyBonus = 0) {
+    function createItem(luckyBonus) {
         const slot = SLOT_TYPES[Math.floor(Math.random() * SLOT_TYPES.length)];
-        const luckMod = luckyBonus * 0.005; 
-        const roll = Math.random() + luckMod; 
+        const roll = Math.random() + (luckyBonus * 0.005);
         let rKey = roll > 0.95 ? 'legendary' : roll > 0.80 ? 'epic' : roll > 0.60 ? 'rare' : 'common';
-        const rarity = RARITY[rKey];
-        const config = SLOT_CONFIG[slot];
-        let baseVal = config.base; if(slot === 'accessory' || slot === 'gloves') baseVal = 4;
+        const rarity = RARITY[rKey]; const config = SLOT_CONFIG[slot];
+        let baseVal = config.base; if(slot==='accessory'||slot==='gloves') baseVal=4;
         const val = Math.floor(baseVal * rarity.m * (0.8 + Math.random()*0.5) + (player.level * 0.5));
-        const nameList = ITEM_NAMES[slot];
-        return { id: Date.now() + Math.random(), slot, name: (rKey==='common'?'':rarity.n) + nameList[Math.floor(Math.random()*nameList.length)], rarity: rKey, val, icon: config.icon };
+        const nameList = ITEM_NAMES[slot] || ['裝備'];
+        return { id: Date.now()+Math.random(), slot, name: (rKey==='common'?'':rarity.n)+nameList[Math.floor(Math.random()*nameList.length)], rarity: rKey, val, icon: config.icon };
     }
 
     function pullGacha() {
@@ -431,40 +400,8 @@
         player.gems -= 100;
         const item = createItem(getStats().luck);
         player.inventory.push(item);
-        AudioEngine.sfx.equip();
-        saveData(); updateUI();
-        
-        let statDesc = "";
-        if(item.slot === 'weapon') statDesc = `攻擊+${item.val}`;
-        else if(item.slot === 'offhand') statDesc = `防禦+${item.val}`;
-        else if(['head', 'body', 'legs'].includes(item.slot)) statDesc = `防禦+${Math.ceil(item.val*0.5)} 生命+${item.val*2}`;
-        else if(item.slot === 'gloves') statDesc = `暴擊+${Math.floor(item.val/2)}%`;
-        else if(item.slot === 'feet') statDesc = `閃避+${Math.floor(item.val/3)}%`;
-        else if(item.slot === 'accessory') statDesc = `幸運+${item.val}%`;
-        
-        alert(`獲得：${item.name}\n${statDesc}`);
-    }
-
-    // --- Selling Logic V31 ---
-    function calcSellPrice(item) {
-        const rData = RARITY[item.rarity];
-        // Price = Base by Rarity + (Item Value * 0.5)
-        let price = rData.basePrice + Math.floor(item.val * 0.5);
-        return Math.min(50, price); // Cap at 50
-    }
-
-    function sellItem(id) {
-        const item = player.inventory.find(x => x.id === id);
-        if(!item) return;
-        
-        const price = calcSellPrice(item);
-        if(!confirm(`確定要賣出「${item.name}」嗎？\n可獲得 ${price} 寶石`)) return;
-
-        player.inventory = player.inventory.filter(x => x.id !== id);
-        player.gems += price;
-        AudioEngine.sfx.coin();
-        showFloatText(`+${price}💎`, "#f1c40f");
-        saveData(); updateUI();
+        AudioEngine.sfx.equip(); saveData(); updateUI();
+        alert(`獲得：${item.name} (${item.val})`);
     }
 
     function equip(id) {
@@ -490,41 +427,35 @@
         document.getElementById('battle-active-screen').style.display = 'block';
         if(activeQuestionPool.length === 0) activeQuestionPool = [...QUESTIONS];
         spawnMonster();
-        AudioEngine.bgm.start(); 
+        AudioEngine.bgm.playBattle(); // Play Epic Music
     }
 
     function spawnMonster() {
         const rand = Math.random() * 100;
-        let tierKey = 'minion';
-        let acc = 0;
+        let tierKey = 'minion'; let acc = 0;
         for (const [key, data] of Object.entries(MONSTER_TIERS)) {
-            acc += data.chance;
-            if (rand <= acc) { tierKey = key; break; }
+            acc += data.chance; if (rand <= acc) { tierKey = key; break; }
         }
         const mData = MONSTER_TIERS[tierKey];
         const mLvl = player.level + mData.lvlMod;
         const mBaseHp = 25 * mLvl * mData.hpMult;
-
+        const nameList = MONSTER_NAMES[tierKey];
+        
         battle = {
-            active: true,
-            bossHp: mBaseHp, maxHp: mBaseHp,
+            active: true, bossHp: mBaseHp, maxHp: mBaseHp,
             playerHp: battle.playerHp > 0 ? battle.playerHp : getStats().maxHp,
-            monsterType: tierKey, monsterLvl: mLvl, shieldTurns: 0
+            monsterType: tierKey, monsterName: nameList[Math.floor(Math.random() * nameList.length)], 
+            monsterLvl: mLvl, shieldTurns: 0
         };
         updateBattleUI(); loadQuestion();
     }
 
     function fleeBattle() {
         if(!confirm("確定要逃離嗎？\n(將放棄本次戰鬥獎勵)")) return;
-        battle.active = false;
-        clearInterval(timerInterval);
+        battle.active = false; clearInterval(timerInterval);
         AudioEngine.bgm.stop(); 
-        showFloatText("ESCAPED!", "#fff");
-        setTimeout(() => {
-            document.getElementById('battle-active-screen').style.display = 'none';
-            document.getElementById('battle-prep-screen').style.display = 'block';
-            saveData();
-        }, 500);
+        document.getElementById('battle-active-screen').style.display = 'none';
+        document.getElementById('battle-prep-screen').style.display = 'block';
     }
 
     function loadQuestion() {
@@ -538,11 +469,9 @@
             <div class="quiz-panel">
                 <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.8rem; margin-bottom:5px;">
                     <span>${q.t===1?'注音 ➤ 國字':'國字 ➤ 注音'}</span>
-                    <span>Q: ${activeQuestionPool.length}</span>
                 </div>
                 <div class="timer-container"><div class="timer-fill" id="timer-bar"></div></div>
                 <div style="text-align:right; font-size:0.8rem; color:#aaa; margin-bottom:10px;" id="timer-text">30s</div>
-                
                 <div style="text-align:center; font-size:1.8rem; margin:10px 0; min-height:50px; display:flex; align-items:center; justify-content:center;">${qHTML}</div>
                 <div>${q.o.map(o=>`<button class="opt-btn" onclick="handleAns(this,'${o}','${q.a}','${q.q}',${q.t})">${o}</button>`).join('')}</div>
             </div>`;
@@ -552,47 +481,35 @@
     function startTimer(qText, ans, type) {
         clearInterval(timerInterval);
         timeLeft = 30;
-        const bar = document.getElementById('timer-bar');
-        const txt = document.getElementById('timer-text');
-        
+        const bar = document.getElementById('timer-bar'); const txt = document.getElementById('timer-text');
         timerInterval = setInterval(() => {
             timeLeft--;
             if (bar) bar.style.width = (timeLeft / 30 * 100) + "%";
             if (txt) txt.innerText = timeLeft + "s";
-            if(timeLeft<=0) {
-                clearInterval(timerInterval);
-                handleTimeout(qText, ans, type);
-            }
+            if(timeLeft<=0) { clearInterval(timerInterval); handleTimeout(qText, ans, type); }
         }, 1000);
     }
 
     function handleTimeout(qText, ans, type) {
         document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
-        AudioEngine.sfx.wrong();
-        showFloatText("TIME OUT!", "#e74c3c");
-        monsterAttack();
-        updateBattleUI();
+        AudioEngine.sfx.wrong(); showFloatText("TIME OUT!", "#e74c3c");
+        monsterAttack(); updateBattleUI();
         setTimeout(()=>checkWinLoss(false, "", ans, qText, type), 800);
     }
 
     function handleAns(btn, c, a, qText, type) {
         clearInterval(timerInterval);
         document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
-        const correct = c===a;
-        const stats = getStats();
-        
+        const correct = c===a; const stats = getStats();
         if(correct) {
             btn.style.background = "#27ae60"; 
-            let isCrit = Math.random() * 100 < stats.crit;
+            let isCrit = Math.random()*100 < stats.crit;
             let dmg = Math.floor(stats.atk * (isCrit ? 2 : 1));
             battle.bossHp -= dmg;
-            AudioEngine.sfx.win();
-            showFloatText(isCrit ? `CRIT ${dmg}!` : `${dmg}`, isCrit ? "#f1c40f" : "#fff");
+            AudioEngine.sfx.win(); showFloatText(isCrit ? `CRIT ${dmg}!` : `${dmg}`, isCrit?"#f1c40f":"#fff");
         } else {
-            btn.style.background = "#c23616"; 
-            monsterAttack();
+            btn.style.background = "#c23616"; monsterAttack();
         }
-
         if (battle.shieldTurns > 0) battle.shieldTurns--;
         updateBattleUI();
         setTimeout(()=>checkWinLoss(correct, c, a, qText, type), 500);
@@ -600,17 +517,11 @@
 
     function monsterAttack() {
         const stats = getStats();
-        let blocked = false;
-        if (battle.shieldTurns > 0) { blocked = true; showFloatText("BLOCKED!", "#3498db"); } 
-        else if (Math.random() * 100 < stats.dodge) { blocked = true; showFloatText("DODGE!", "#9b59b6"); }
-
-        if (!blocked) {
-            let baseDmg = battle.monsterLvl * 6;
-            let incoming = Math.max(1, baseDmg - Math.floor(stats.def / 3));
-            battle.playerHp -= incoming;
-            AudioEngine.sfx.wrong();
-            showFloatText(`-${incoming}`, "#e74c3c");
-        }
+        if (battle.shieldTurns > 0) { showFloatText("BLOCKED!", "#3498db"); return; } 
+        if (Math.random()*100 < stats.dodge) { showFloatText("DODGE!", "#9b59b6"); return; }
+        let dmg = Math.max(1, (battle.monsterLvl*6) - Math.floor(stats.def/3));
+        battle.playerHp -= dmg;
+        AudioEngine.sfx.wrong(); showFloatText(`-${dmg}`, "#e74c3c");
     }
 
     function checkWinLoss(correct, c, a, qText, type) {
@@ -622,21 +533,39 @@
     function winBattle() {
         const mData = MONSTER_TIERS[battle.monsterType];
         let xpGain = mData.xpMult * 10;
-        player.gems += Math.floor(xpGain / 2);
+        let gemGain = Math.floor(xpGain / 2);
+        player.gems += gemGain;
         if(Math.random() > 0.8) { player.potions++; showFloatText("+POTION", "#2ecc71"); }
         addXp(xpGain);
-        setTimeout(() => {
-            const stats = getStats();
-            battle.playerHp = Math.min(stats.maxHp, battle.playerHp + Math.floor(stats.maxHp * 0.2));
-            spawnMonster();
-        }, 1000);
+        
+        // V33 Update: Show Result Menu instead of auto-spawn
+        AudioEngine.bgm.stop();
+        AudioEngine.sfx.victoryTheme(); // Play victory fanfare
+        document.getElementById('loot-info').innerHTML = `XP +${xpGain}<br>💎 +${gemGain}`;
+        document.getElementById('battle-result-modal').style.display = 'flex';
+    }
+    
+    // New V33 Functions
+    function continueBattle() {
+        document.getElementById('battle-result-modal').style.display = 'none';
+        const stats = getStats();
+        // Heal 20% post battle
+        battle.playerHp = Math.min(stats.maxHp, battle.playerHp + Math.floor(stats.maxHp * 0.2));
+        spawnMonster();
+        AudioEngine.bgm.playBattle();
+    }
+
+    function exitBattle() {
+        document.getElementById('battle-result-modal').style.display = 'none';
+        battle.active = false;
+        document.getElementById('battle-active-screen').style.display = 'none';
+        document.getElementById('battle-prep-screen').style.display = 'block';
+        saveData();
     }
 
     function loseBattle() {
-        AudioEngine.bgm.stop(); 
-        alert("你倒下了...");
-        battle.active = false;
-        battle.playerHp = getStats().maxHp;
+        AudioEngine.bgm.stop(); alert("你倒下了...");
+        battle.active = false; battle.playerHp = getStats().maxHp;
         document.getElementById('battle-active-screen').style.display = 'none';
         document.getElementById('battle-prep-screen').style.display = 'block';
     }
@@ -644,30 +573,15 @@
     function addXp(amount) {
         player.xp += amount;
         let req = player.level * 100;
-        if(player.xp >= req) {
-            player.xp -= req;
-            player.level++;
-            showFloatText("LEVEL UP!", "#f1c40f");
-            battle.playerHp = getStats().maxHp;
-        }
+        if(player.xp >= req) { player.xp -= req; player.level++; showFloatText("LEVEL UP!", "#f1c40f"); battle.playerHp = getStats().maxHp; }
         saveData(); updateUI();
     }
 
     function usePotion() {
-        if(player.potions > 0) {
-            player.potions--;
-            const s=getStats();
-            battle.playerHp = Math.min(s.maxHp, battle.playerHp + Math.floor(s.maxHp * 0.5));
-            showFloatText("+HP", "#2ecc71"); AudioEngine.sfx.equip();
-            updateBattleUI(); updateUI();
-        }
+        if(player.potions > 0) { player.potions--; const s=getStats(); battle.playerHp = Math.min(s.maxHp, battle.playerHp + Math.floor(s.maxHp * 0.5)); showFloatText("+HP", "#2ecc71"); AudioEngine.sfx.equip(); updateBattleUI(); updateUI(); }
     }
     function useShield() {
-        if(player.shields > 0) {
-            player.shields--; battle.shieldTurns = 2;
-            showFloatText("SHIELD!", "#3498db"); AudioEngine.sfx.equip();
-            updateBattleUI(); updateUI();
-        }
+        if(player.shields > 0) { player.shields--; battle.shieldTurns = 2; showFloatText("SHIELD!", "#3498db"); AudioEngine.sfx.equip(); updateBattleUI(); updateUI(); }
     }
 
     // --- UI Update ---
@@ -683,7 +597,7 @@
             document.getElementById('boss-sprite').innerText = mData.icon;
             document.getElementById('boss-sprite').style.filter = `drop-shadow(0 0 30px ${mData.color})`;
             document.getElementById('boss-hp-bar').style.background = mData.color;
-            document.getElementById('enemy-name').innerText = mData.name;
+            document.getElementById('enemy-name').innerText = battle.monsterName || mData.label;
             document.getElementById('enemy-name').style.color = mData.color;
             document.getElementById('enemy-level').innerText = battle.monsterLvl;
             document.getElementById('btn-potion-count').innerText = player.potions;
@@ -698,65 +612,29 @@
         document.getElementById('ui-lvl').innerText = player.level;
         document.getElementById('ui-xp-bar').style.width = ((player.xp / (player.level*100))*100) + '%';
         document.getElementById('ui-xp-text').innerText = `${player.xp}/${player.level*100}`;
-        document.getElementById('stat-atk').innerText = s.atk;
-        document.getElementById('stat-def').innerText = s.def;
-        document.getElementById('stat-hp').innerText = s.maxHp;
-        document.getElementById('stat-crit').innerText = s.crit+'%';
-        document.getElementById('stat-dodge').innerText = s.dodge+'%';
-        document.getElementById('stat-luck').innerText = s.luck+'%';
+        document.getElementById('stat-atk').innerText = s.atk; document.getElementById('stat-def').innerText = s.def;
+        document.getElementById('stat-hp').innerText = s.maxHp; document.getElementById('stat-crit').innerText = s.crit+'%';
+        document.getElementById('stat-dodge').innerText = s.dodge+'%'; document.getElementById('stat-luck').innerText = s.luck+'%';
         document.getElementById('gacha-luck-val').innerText = s.luck;
-        document.getElementById('inv-potion').innerText = player.potions;
-        document.getElementById('inv-shield').innerText = player.shields;
+        document.getElementById('inv-potion').innerText = player.potions; document.getElementById('inv-shield').innerText = player.shields;
 
         SLOT_TYPES.forEach(slot => {
-            const el = document.getElementById(`slot-${slot}`);
-            const item = player.equipped[slot];
+            const el = document.getElementById(`slot-${slot}`); const item = player.equipped[slot];
             if(item) {
-                el.classList.add('slot-equipped');
-                el.style.borderColor = RARITY[item.rarity].c;
-                el.querySelector('.slot-icon').innerText = item.icon;
-                el.querySelector('.slot-name').innerText = item.name;
-                el.querySelector('.slot-name').style.color = RARITY[item.rarity].c;
+                el.classList.add('slot-equipped'); el.style.borderColor = RARITY[item.rarity].c;
+                el.querySelector('.slot-icon').innerText = item.icon; el.querySelector('.slot-name').innerText = item.name; el.querySelector('.slot-name').style.color = RARITY[item.rarity].c;
             } else {
-                el.classList.remove('slot-equipped');
-                el.style.borderColor = '#444';
-                el.querySelector('.slot-icon').innerText = SLOT_CONFIG[slot].icon;
-                el.querySelector('.slot-name').innerText = SLOT_CONFIG[slot].name;
-                el.querySelector('.slot-name').style.color = '#7f8fa6';
+                el.classList.remove('slot-equipped'); el.style.borderColor = '#444';
+                el.querySelector('.slot-icon').innerText = SLOT_CONFIG[slot].icon; el.querySelector('.slot-name').innerText = SLOT_CONFIG[slot].name; el.querySelector('.slot-name').style.color = '#7f8fa6';
             }
         });
-
         const l = document.getElementById('inventory-list'); l.innerHTML = '';
-        if(player.inventory.length === 0) l.innerHTML = '<div style="color:#555; text-align:center; padding:10px;">背包空空如也</div>';
-        
+        if(player.inventory.length === 0) l.innerHTML = '<div style="color:#555; text-align:center;">背包空空如也</div>';
         player.inventory.forEach(i => {
-            const d = document.createElement('div'); 
-            d.className = 'inv-item'; 
-            d.style.borderLeftColor = RARITY[i.rarity].c;
-            const price = calcSellPrice(i);
-
-            let statDesc = "";
-            if(i.slot === 'weapon') statDesc = `攻擊+${i.val}`;
-            else if(i.slot === 'offhand') statDesc = `防禦+${i.val}`;
-            else if(['head', 'body', 'legs'].includes(i.slot)) statDesc = `防禦+${Math.ceil(i.val*0.5)} 生命+${i.val*2}`;
-            else if(i.slot === 'gloves') statDesc = `暴擊+${Math.floor(i.val/2)}%`;
-            else if(i.slot === 'feet') statDesc = `閃避+${Math.floor(i.val/3)}%`;
-            else if(i.slot === 'accessory') statDesc = `幸運+${i.val}%`;
-
-            d.innerHTML = `
-                <div style="font-size:1.5rem; margin-right:10px;">${i.icon}</div>
-                <div style="flex:1;">
-                    <div style="color:${RARITY[i.rarity].c}; font-weight:bold;">${i.name}</div>
-                    <div style="font-size:0.7rem; color:#aaa;">${SLOT_CONFIG[i.slot].name} | <span class="item-stat-text">${statDesc}</span></div>
-                </div>
-                <div class="inv-actions">
-                    <button class="btn-action btn-equip" onclick="equip(${i.id})">裝備</button>
-                    <button class="btn-action btn-sell" onclick="sellItem(${i.id})">💰 ${price}</button>
-                </div>
-            `;
+            const d = document.createElement('div'); d.className = 'inv-item'; d.style.borderLeftColor = RARITY[i.rarity].c;
+            d.innerHTML = `<div style="font-size:1.5rem; margin-right:10px;">${i.icon}</div><div style="flex:1;"><div style="color:${RARITY[i.rarity].c}; font-weight:bold;">${i.name}</div><div style="font-size:0.7rem; color:#aaa;">${SLOT_CONFIG[i.slot].name} (+${i.val})</div></div><div class="inv-actions"><button class="btn-action btn-equip" onclick="equip(${i.id})">裝備</button></div>`;
             l.appendChild(d);
         });
-        renderPrepScreen();
     }
 
     function showFb(correct, c, a, qText, type) {
@@ -774,48 +652,120 @@
         document.getElementById('tab-'+t).classList.add('active');
         document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
         event.currentTarget.classList.add('active');
-        if(t !== 'battle') AudioEngine.bgm.stop(); 
     }
     function showFloatText(txt,col){const el=document.createElement('div');el.className='float-txt';el.innerText=txt;el.style.color=col;document.body.appendChild(el);setTimeout(()=>el.remove(),800);}
     
+    // --- V33 EPIC AUDIO ENGINE ---
     const AudioEngine = {
-        ctx: null, isMuted: false, bgmInterval: null,
-        init: function() { if(!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)(); },
+        ctx: null, isMuted: false, intervalId: null,
+        init: function() { 
+            if(!this.ctx) {
+                this.ctx = new (window.AudioContext||window.webkitAudioContext)(); 
+            }
+        },
         toggle: function() { 
             this.isMuted=!this.isMuted; 
             document.getElementById('sound-btn').innerText=this.isMuted?'🔇':'🔊'; 
             if(this.isMuted) this.bgm.stop();
-            else if(battle.active) this.bgm.start(); 
+            else if(battle.active) this.bgm.playBattle(); 
         },
-        playTone: function(f,t,d,v=0.1) { 
-            if(this.isMuted||!this.ctx)return; 
-            const o=this.ctx.createOscillator(),g=this.ctx.createGain();
-            o.type=t; o.frequency.value=f;
-            g.gain.setValueAtTime(v, this.ctx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+d);
-            o.connect(g); g.connect(this.ctx.destination);
-            o.start(); o.stop(this.ctx.currentTime+d); 
+        // Low-level Synthesis
+        playTone: function(freq, type, dur, vol=0.1, decay=0.1) {
+            if(this.isMuted || !this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(); osc.stop(this.ctx.currentTime + dur);
+        },
+        playNoise: function(dur, vol) {
+            if(this.isMuted || !this.ctx) return;
+            const bufferSize = this.ctx.sampleRate * dur;
+            const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+            noise.connect(gain); gain.connect(this.ctx.destination);
+            noise.start();
+        },
+        playBass: function(freq, dur) {
+            if(this.isMuted || !this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const filter = this.ctx.createBiquadFilter();
+            osc.type = 'sawtooth'; osc.frequency.value = freq;
+            filter.type = 'lowpass'; filter.frequency.value = 400; 
+            gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + dur);
+            osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(); osc.stop(this.ctx.currentTime + dur);
+        },
+        playKick: function() {
+            if(this.isMuted || !this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+            gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.5);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(); osc.stop(this.ctx.currentTime + 0.5);
         },
         sfx: { 
-            win:()=>{AudioEngine.playTone(600,'sine',0.3)}, 
-            wrong:()=>{AudioEngine.playTone(150,'sawtooth',0.4)}, 
-            equip:()=>{AudioEngine.playTone(800,'triangle',0.1)},
-            coin:()=>{AudioEngine.playTone(1200,'sine',0.1)} 
+            win:()=>{AudioEngine.playTone(600,'sine',0.3); AudioEngine.playTone(900,'sine',0.3,0.1,0.2);}, 
+            wrong:()=>{AudioEngine.playTone(100,'sawtooth',0.4)}, 
+            equip:()=>{AudioEngine.playTone(1200,'triangle',0.1)},
+            victoryTheme: () => {
+                if(AudioEngine.isMuted) return;
+                // Simple Victory Fanfare
+                [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => setTimeout(() => AudioEngine.playTone(f, 'square', 0.4, 0.2), i*150));
+            }
         },
         bgm: {
             step: 0,
-            start: function() {
-                if(AudioEngine.isMuted || AudioEngine.bgmInterval) return;
-                AudioEngine.bgmInterval = setInterval(()=>{
-                    const t = AudioEngine.ctx.currentTime;
-                    if(AudioEngine.bgm.step % 8 === 0) AudioEngine.playTone(60, 'sine', 0.2, 0.3); 
-                    if(AudioEngine.bgm.step % 2 === 0) AudioEngine.playTone(800, 'square', 0.05, 0.02);
-                    if(AudioEngine.bgm.step % 8 === 4) AudioEngine.playTone(50, 'sawtooth', 0.3, 0.1); 
-                    AudioEngine.bgm.step = (AudioEngine.bgm.step + 1) % 16;
-                }, 150); 
+            playBattle: function() {
+                if(AudioEngine.isMuted || AudioEngine.intervalId) return;
+                // V33 Epic Music Sequencer (130 BPM approx)
+                // C Minor Progression: Cm - G - Cm - F
+                const bassNotes = [65.41, 65.41, 65.41, 65.41,  49.00, 49.00, 49.00, 49.00,  65.41, 65.41, 65.41, 65.41,  43.65, 43.65, 43.65, 43.65];
+                const arpNotes = [261.63, 311.13, 392.00, 523.25]; // Cm Arpeggio
+
+                AudioEngine.intervalId = setInterval(() => {
+                    const s = AudioEngine.bgm.step;
+                    const time = AudioEngine.ctx.currentTime;
+                    
+                    // 1. Kick Drum (Strong beats)
+                    if (s % 4 === 0) AudioEngine.playKick();
+                    
+                    // 2. Snare / Noise (Backbeat)
+                    if (s % 8 === 4) AudioEngine.playNoise(0.2, 0.15);
+
+                    // 3. Hi-Hat (Running 16ths)
+                    if (s % 2 === 0) AudioEngine.playNoise(0.05, 0.05);
+
+                    // 4. Bass Line (Driving 8ths)
+                    if (s % 2 === 0) {
+                        const noteIdx = Math.floor(s / 2) % 16;
+                        AudioEngine.playBass(bassNotes[noteIdx], 0.2);
+                    }
+
+                    // 5. Arpeggio / Lead (Fast 16ths)
+                    // Varied pattern
+                    let arpFreq = arpNotes[s % 4];
+                    if (Math.floor(s/16)%2 === 1) arpFreq *= 1.5; // Shift pitch every other bar
+                    AudioEngine.playTone(arpFreq, 'triangle', 0.1, 0.05);
+
+                    AudioEngine.bgm.step++;
+                }, 115); // ~130 BPM (60000 / 130 / 4)
             },
             stop: function() {
-                if(AudioEngine.bgmInterval) { clearInterval(AudioEngine.bgmInterval); AudioEngine.bgmInterval = null; }
+                if(AudioEngine.intervalId) { clearInterval(AudioEngine.intervalId); AudioEngine.intervalId = null; AudioEngine.bgm.step = 0; }
             }
         }
     };
