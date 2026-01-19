@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>字靈獵人：戰歌版 (V33)</title>
+    <title>字靈獵人：圖鑑對應版 (V34)</title>
     <script src="moe_data.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Cinzel:wght@700&display=swap');
@@ -136,7 +136,7 @@
 <div id="cover-screen">
     <div style="font-size:5rem; margin-bottom: 10px; filter: drop-shadow(0 0 20px var(--primary));">🔥</div>
     <div style="font-family: var(--font-title); font-size: 3rem; color: var(--primary); letter-spacing: 3px;">WORD<br>WARRIOR</div>
-    <p style="color:#7f8fa6; letter-spacing: 2px;">V33 EPIC AUDIO</p>
+    <p style="color:#7f8fa6; letter-spacing: 2px;">V34 ACCURATE SPRITES</p>
     <div id="status-text" style="color:#2ecc71; margin: 15px 0;">載入中...</div>
     <button class="start-btn" onclick="initGameSafe()">ENTER WORLD</button>
     <div style="margin-top:20px; color:#555; cursor:pointer; text-decoration:underline; font-size:0.8rem;" onclick="hardReset()">重置遊戲 (Reset)</div>
@@ -285,12 +285,13 @@
 
     let player = { gems: 100, xp: 0, level: 1, inventory: [], equipped: {}, potions: 3, shields: 1 };
     
-    const MONSTER_NAMES = {
-        minion: ['史萊姆', '蝸牛怪', '憤怒小雞', '綠毛蟲', '小石怪', '吸血蝙蝠', '寶箱怪', '蘑菇人'],
-        small: ['哥布林', '野豬怪', '骷髏士兵', '蜥蜴人', '荒野盜賊', '叢林狼', '巨鼠', '漂浮之眼'],
-        medium: ['白毛猩猩', '沼澤女巫', '食人魔', '雙頭蛇', '石像鬼', '鐵甲犀牛', '食人花', '幽靈騎士'],
-        miniboss: ['山豬首領', '赤色惡鬼', '巨型蜘蛛', '獨眼巨人', '詛咒騎士', '死靈法師', '牛頭人', '暗影刺客'],
-        boss: ['深淵惡靈', '吸血鬼王', '骸骨巨龍', '混沌炎魔', '深淵領主', '墮落天使', '遠古巨獸']
+    // V34 NEW: STRUCTURED MONSTER DATA (Name + Icon)
+    const MONSTER_DATA = {
+        minion: [{n:'史萊姆',i:'🦠'},{n:'蝸牛怪',i:'🐌'},{n:'憤怒小雞',i:'🐤'},{n:'綠毛蟲',i:'🐛'},{n:'小石怪',i:'🪨'},{n:'吸血蝙蝠',i:'🦇'},{n:'寶箱怪',i:'📦'},{n:'蘑菇人',i:'🍄'}],
+        small: [{n:'哥布林',i:'👺'},{n:'野豬怪',i:'🐗'},{n:'骷髏士兵',i:'💀'},{n:'蜥蜴人',i:'🦎'},{n:'荒野盜賊',i:'🥷'},{n:'叢林狼',i:'🐺'},{n:'巨鼠',i:'🐀'},{n:'漂浮之眼',i:'👁️'}],
+        medium: [{n:'白毛猩猩',i:'🦍'},{n:'沼澤女巫',i:'🧙‍♀️'},{n:'食人魔',i:'👹'},{n:'雙頭蛇',i:'🐍'},{n:'石像鬼',i:'🗿'},{n:'鐵甲犀牛',i:'🦏'},{n:'食人花',i:'🌺'},{n:'幽靈騎士',i:'👻'}],
+        miniboss: [{n:'山豬首領',i:'🐗'},{n:'赤色惡鬼',i:'👹'},{n:'巨型蜘蛛',i:'🕷️'},{n:'獨眼巨人',i:'👁️‍🗨️'},{n:'詛咒騎士',i:'💀'},{n:'死靈法師',i:'🧙‍♂️'},{n:'牛頭人',i:'🐮'},{n:'暗影刺客',i:'👤'}],
+        boss: [{n:'深淵惡靈',i:'👻'},{n:'吸血鬼王',i:'🧛'},{n:'骸骨巨龍',i:'🐉'},{n:'混沌炎魔',i:'🔥'},{n:'深淵領主',i:'👿'},{n:'墮落天使',i:'👼'},{n:'遠古巨獸',i:'🦖'}]
     };
 
     const MONSTER_TIERS = {
@@ -301,7 +302,7 @@
         boss: { label: '魔王級', lvlMod: 7, hpMult: 10, xpMult: 50, color: '#e74c3c', icon: '👑', chance: 2 }
     };
 
-    let battle = { active: false, bossHp: 100, maxHp: 100, playerHp: 100, monsterType: 'minion', monsterName: 'Monster', monsterLvl: 1, shieldTurns: 0 };
+    let battle = { active: false, bossHp: 100, maxHp: 100, playerHp: 100, monsterType: 'minion', monsterName: 'Monster', monsterIcon: '👹', monsterLvl: 1, shieldTurns: 0 };
     const RARITY = { common: { c:'#95a5a6',m:1,n:'普通' }, rare: { c:'#3498db',m:1.5,n:'稀有' }, epic: { c:'#9b59b6',m:2.5,n:'史詩' }, legendary: { c:'#e74c3c',m:4,n:'傳說' } };
     const ITEM_NAMES = { head:['皮帽','鐵盔','戰術盔'], body:['布衣','鎖子甲','秘銀鎧'], gloves:['工作手套','戰鬥拳套','泰坦護手'], legs:['亞麻褲','護脛甲','暗影護腿'], feet:['草鞋','戰鬥靴','疾風靴'], accessory:['幸運草','月光石','命運之輪'], weapon:['鐵劍','戰斧','雷神鎚'], offhand:['木盾','圓盾','聖騎士盾'] };
 
@@ -420,14 +421,14 @@
         }
     }
 
-    // --- Battle Logic ---
+    // --- Battle Logic V34 ---
     function startBattleSequence() {
         AudioEngine.init(); 
         document.getElementById('battle-prep-screen').style.display = 'none';
         document.getElementById('battle-active-screen').style.display = 'block';
         if(activeQuestionPool.length === 0) activeQuestionPool = [...QUESTIONS];
         spawnMonster();
-        AudioEngine.bgm.playBattle(); // Play Epic Music
+        AudioEngine.bgm.playBattle(); 
     }
 
     function spawnMonster() {
@@ -439,12 +440,17 @@
         const mData = MONSTER_TIERS[tierKey];
         const mLvl = player.level + mData.lvlMod;
         const mBaseHp = 25 * mLvl * mData.hpMult;
-        const nameList = MONSTER_NAMES[tierKey];
+        
+        // V34: Select random monster object (name + icon)
+        const dataList = MONSTER_DATA[tierKey];
+        const rMonster = dataList[Math.floor(Math.random() * dataList.length)];
         
         battle = {
             active: true, bossHp: mBaseHp, maxHp: mBaseHp,
             playerHp: battle.playerHp > 0 ? battle.playerHp : getStats().maxHp,
-            monsterType: tierKey, monsterName: nameList[Math.floor(Math.random() * nameList.length)], 
+            monsterType: tierKey, 
+            monsterName: rMonster.n,  // Store Name
+            monsterIcon: rMonster.i,  // Store Icon
             monsterLvl: mLvl, shieldTurns: 0
         };
         updateBattleUI(); loadQuestion();
@@ -538,18 +544,15 @@
         if(Math.random() > 0.8) { player.potions++; showFloatText("+POTION", "#2ecc71"); }
         addXp(xpGain);
         
-        // V33 Update: Show Result Menu instead of auto-spawn
         AudioEngine.bgm.stop();
-        AudioEngine.sfx.victoryTheme(); // Play victory fanfare
+        AudioEngine.sfx.victoryTheme(); 
         document.getElementById('loot-info').innerHTML = `XP +${xpGain}<br>💎 +${gemGain}`;
         document.getElementById('battle-result-modal').style.display = 'flex';
     }
     
-    // New V33 Functions
     function continueBattle() {
         document.getElementById('battle-result-modal').style.display = 'none';
         const stats = getStats();
-        // Heal 20% post battle
         battle.playerHp = Math.min(stats.maxHp, battle.playerHp + Math.floor(stats.maxHp * 0.2));
         spawnMonster();
         AudioEngine.bgm.playBattle();
@@ -584,7 +587,7 @@
         if(player.shields > 0) { player.shields--; battle.shieldTurns = 2; showFloatText("SHIELD!", "#3498db"); AudioEngine.sfx.equip(); updateBattleUI(); updateUI(); }
     }
 
-    // --- UI Update ---
+    // --- UI Update V34 ---
     function updateBattleUI() {
         document.getElementById('boss-hp-bar').style.width = Math.max(0,(battle.bossHp/battle.maxHp)*100)+'%';
         document.getElementById('boss-hp-text').innerText = Math.ceil(battle.bossHp)+"/"+Math.ceil(battle.maxHp);
@@ -594,10 +597,12 @@
         
         if(battle.active) {
             const mData = MONSTER_TIERS[battle.monsterType];
-            document.getElementById('boss-sprite').innerText = mData.icon;
+            // V34: Use specific monster icon from battle state
+            document.getElementById('boss-sprite').innerText = battle.monsterIcon;
             document.getElementById('boss-sprite').style.filter = `drop-shadow(0 0 30px ${mData.color})`;
             document.getElementById('boss-hp-bar').style.background = mData.color;
-            document.getElementById('enemy-name').innerText = battle.monsterName || mData.label;
+            // V34: Use specific monster name from battle state
+            document.getElementById('enemy-name').innerText = battle.monsterName;
             document.getElementById('enemy-name').style.color = mData.color;
             document.getElementById('enemy-level').innerText = battle.monsterLvl;
             document.getElementById('btn-potion-count').innerText = player.potions;
@@ -655,118 +660,38 @@
     }
     function showFloatText(txt,col){const el=document.createElement('div');el.className='float-txt';el.innerText=txt;el.style.color=col;document.body.appendChild(el);setTimeout(()=>el.remove(),800);}
     
-    // --- V33 EPIC AUDIO ENGINE ---
+    // --- Audio Engine ---
     const AudioEngine = {
         ctx: null, isMuted: false, intervalId: null,
-        init: function() { 
-            if(!this.ctx) {
-                this.ctx = new (window.AudioContext||window.webkitAudioContext)(); 
-            }
-        },
-        toggle: function() { 
-            this.isMuted=!this.isMuted; 
-            document.getElementById('sound-btn').innerText=this.isMuted?'🔇':'🔊'; 
-            if(this.isMuted) this.bgm.stop();
-            else if(battle.active) this.bgm.playBattle(); 
-        },
-        // Low-level Synthesis
-        playTone: function(freq, type, dur, vol=0.1, decay=0.1) {
-            if(this.isMuted || !this.ctx) return;
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = type; osc.frequency.value = freq;
-            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
-            osc.connect(gain); gain.connect(this.ctx.destination);
-            osc.start(); osc.stop(this.ctx.currentTime + dur);
-        },
-        playNoise: function(dur, vol) {
-            if(this.isMuted || !this.ctx) return;
-            const bufferSize = this.ctx.sampleRate * dur;
-            const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-            const noise = this.ctx.createBufferSource();
-            noise.buffer = buffer;
-            const gain = this.ctx.createGain();
-            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
-            noise.connect(gain); gain.connect(this.ctx.destination);
-            noise.start();
-        },
-        playBass: function(freq, dur) {
-            if(this.isMuted || !this.ctx) return;
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            const filter = this.ctx.createBiquadFilter();
-            osc.type = 'sawtooth'; osc.frequency.value = freq;
-            filter.type = 'lowpass'; filter.frequency.value = 400; 
-            gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-            gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + dur);
-            osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
-            osc.start(); osc.stop(this.ctx.currentTime + dur);
-        },
-        playKick: function() {
-            if(this.isMuted || !this.ctx) return;
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
-            gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.5);
-            osc.connect(gain); gain.connect(this.ctx.destination);
-            osc.start(); osc.stop(this.ctx.currentTime + 0.5);
-        },
+        init: function() { if(!this.ctx) { this.ctx = new (window.AudioContext||window.webkitAudioContext)(); } },
+        toggle: function() { this.isMuted=!this.isMuted; document.getElementById('sound-btn').innerText=this.isMuted?'🔇':'🔊'; if(this.isMuted) this.bgm.stop(); else if(battle.active) this.bgm.playBattle(); },
+        playTone: function(freq, type, dur, vol=0.1) { if(this.isMuted || !this.ctx) return; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.type = type; osc.frequency.value = freq; gain.gain.setValueAtTime(vol, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur); osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + dur); },
+        playNoise: function(dur, vol) { if(this.isMuted || !this.ctx) return; const bufferSize = this.ctx.sampleRate * dur; const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1; const noise = this.ctx.createBufferSource(); noise.buffer = buffer; const gain = this.ctx.createGain(); gain.gain.setValueAtTime(vol, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur); noise.connect(gain); gain.connect(this.ctx.destination); noise.start(); },
+        playBass: function(freq, dur) { if(this.isMuted || !this.ctx) return; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); const filter = this.ctx.createBiquadFilter(); osc.type = 'sawtooth'; osc.frequency.value = freq; filter.type = 'lowpass'; filter.frequency.value = 400; gain.gain.setValueAtTime(0.2, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + dur); osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + dur); },
+        playKick: function() { if(this.isMuted || !this.ctx) return; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.frequency.setValueAtTime(150, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5); gain.gain.setValueAtTime(0.5, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.5); osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.5); },
         sfx: { 
             win:()=>{AudioEngine.playTone(600,'sine',0.3); AudioEngine.playTone(900,'sine',0.3,0.1,0.2);}, 
             wrong:()=>{AudioEngine.playTone(100,'sawtooth',0.4)}, 
             equip:()=>{AudioEngine.playTone(1200,'triangle',0.1)},
-            victoryTheme: () => {
-                if(AudioEngine.isMuted) return;
-                // Simple Victory Fanfare
-                [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => setTimeout(() => AudioEngine.playTone(f, 'square', 0.4, 0.2), i*150));
-            }
+            victoryTheme: () => { if(AudioEngine.isMuted) return; [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => setTimeout(() => AudioEngine.playTone(f, 'square', 0.4, 0.2), i*150)); }
         },
         bgm: {
             step: 0,
             playBattle: function() {
                 if(AudioEngine.isMuted || AudioEngine.intervalId) return;
-                // V33 Epic Music Sequencer (130 BPM approx)
-                // C Minor Progression: Cm - G - Cm - F
-                const bassNotes = [65.41, 65.41, 65.41, 65.41,  49.00, 49.00, 49.00, 49.00,  65.41, 65.41, 65.41, 65.41,  43.65, 43.65, 43.65, 43.65];
-                const arpNotes = [261.63, 311.13, 392.00, 523.25]; // Cm Arpeggio
-
+                const bassNotes = [65.41, 65.41, 65.41, 65.41, 49.00, 49.00, 49.00, 49.00, 65.41, 65.41, 65.41, 65.41, 43.65, 43.65, 43.65, 43.65];
+                const arpNotes = [261.63, 311.13, 392.00, 523.25];
                 AudioEngine.intervalId = setInterval(() => {
                     const s = AudioEngine.bgm.step;
-                    const time = AudioEngine.ctx.currentTime;
-                    
-                    // 1. Kick Drum (Strong beats)
                     if (s % 4 === 0) AudioEngine.playKick();
-                    
-                    // 2. Snare / Noise (Backbeat)
                     if (s % 8 === 4) AudioEngine.playNoise(0.2, 0.15);
-
-                    // 3. Hi-Hat (Running 16ths)
                     if (s % 2 === 0) AudioEngine.playNoise(0.05, 0.05);
-
-                    // 4. Bass Line (Driving 8ths)
-                    if (s % 2 === 0) {
-                        const noteIdx = Math.floor(s / 2) % 16;
-                        AudioEngine.playBass(bassNotes[noteIdx], 0.2);
-                    }
-
-                    // 5. Arpeggio / Lead (Fast 16ths)
-                    // Varied pattern
-                    let arpFreq = arpNotes[s % 4];
-                    if (Math.floor(s/16)%2 === 1) arpFreq *= 1.5; // Shift pitch every other bar
-                    AudioEngine.playTone(arpFreq, 'triangle', 0.1, 0.05);
-
+                    if (s % 2 === 0) { const noteIdx = Math.floor(s / 2) % 16; AudioEngine.playBass(bassNotes[noteIdx], 0.2); }
+                    let arpFreq = arpNotes[s % 4]; if (Math.floor(s/16)%2 === 1) arpFreq *= 1.5; AudioEngine.playTone(arpFreq, 'triangle', 0.1, 0.05);
                     AudioEngine.bgm.step++;
-                }, 115); // ~130 BPM (60000 / 130 / 4)
+                }, 115);
             },
-            stop: function() {
-                if(AudioEngine.intervalId) { clearInterval(AudioEngine.intervalId); AudioEngine.intervalId = null; AudioEngine.bgm.step = 0; }
-            }
+            stop: function() { if(AudioEngine.intervalId) { clearInterval(AudioEngine.intervalId); AudioEngine.intervalId = null; AudioEngine.bgm.step = 0; } }
         }
     };
     function toggleMute() { AudioEngine.toggle(); }
