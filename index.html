@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>字靈獵人：百層塔傳說 (V48)</title>
+    <title>字靈獵人：百層塔傳說 (V49)</title>
     <script src="moe_data.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&display=swap');
@@ -168,6 +168,7 @@
         .result-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid #444; }
         .res-row { display: flex; justify-content: space-between; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px; margin-bottom: 5px; }
         .res-val { font-weight: bold; color: #fff; }
+        .gacha-ticket-badge { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; position: absolute; top: -5px; right: -5px; font-weight: bold; animation: pulse 1s infinite; }
     </style>
 </head>
 <body>
@@ -177,7 +178,7 @@
 <div id="cover-screen">
     <div style="font-size:5rem; margin-bottom: 10px; filter: drop-shadow(0 0 20px var(--primary));">🔥</div>
     <div style="font-size: 3rem; color: var(--primary); letter-spacing: 3px; font-weight: bold;">字靈獵人</div>
-    <p style="color:#7f8fa6; letter-spacing: 2px;">V48 百層塔傳說</p>
+    <p style="color:#7f8fa6; letter-spacing: 2px;">V49 修正版</p>
     <div id="status-text" style="color:#2ecc71; margin: 15px 0;">載入中...</div>
     <button class="start-btn" onclick="initGameSafe()">進入世界</button>
     <div style="margin-top:20px; color:#555; cursor:pointer; text-decoration:underline; font-size:0.8rem;" onclick="hardReset()">重置進度 (Reset)</div>
@@ -326,7 +327,7 @@
 
 <script>
 /**
- * 遊戲引擎 V48 (百層塔傳說 + Boss突變 + 33種怪物)
+ * 遊戲引擎 V49 (百層塔傳說 + 修正計時扣血Bug)
  */
 
 const AudioEngine = {
@@ -403,7 +404,6 @@ const PRESET_CHARS = [
 ];
 
 // Expanded Monster DB (33 Monsters)
-// trait codes: R=reflect, H=regen, T=tank, G=glass, S=ghost (speed), B=boss
 const MONSTERS = {
     // Lv 1-10
     m01: { n:'史萊姆', i:'💧', hp:30, atk:5, xp:10, t:'' },
@@ -481,13 +481,13 @@ function initGameSafe() {
 }
 
 function loadData() {
-    const d = JSON.parse(localStorage.getItem('rpg_v48_save'));
+    const d = JSON.parse(localStorage.getItem('rpg_v49_save'));
     if (d) { player = { ...player, ...d.player }; if(!player.totalQ) player.totalQ=0; }
     const fixes = JSON.parse(localStorage.getItem('rpg_fixes')); if(fixes) customCorrections = fixes;
 }
-function saveData() { localStorage.setItem('rpg_v48_save', JSON.stringify({ player })); }
+function saveData() { localStorage.setItem('rpg_v49_save', JSON.stringify({ player })); }
 function saveCorrections() { localStorage.setItem('rpg_fixes', JSON.stringify(customCorrections)); }
-function hardReset() { if(confirm('確定要刪除所有進度嗎？')) { localStorage.removeItem('rpg_v48_save'); location.reload(); } }
+function hardReset() { if(confirm('確定要刪除所有進度嗎？')) { localStorage.removeItem('rpg_v49_save'); location.reload(); } }
 
 // --- Character & Stats ---
 function showCharacterCreation() {
@@ -617,7 +617,6 @@ function startBattleSequence(mapId) {
     // Boss Mutation: 5% Chance
     const isBoss = Math.random() < 0.05;
     const hpMult = isBoss ? 5 : 1; const atkMult = isBoss ? 1.5 : 1;
-    const bossDefMult = isBoss ? 1.5 : 1;
     
     battle = {
         active: true, mapId: battle.mapId, monster: mData, isBoss: isBoss,
@@ -663,7 +662,6 @@ function loadQuestion() {
     if(battle.timerId) clearInterval(battle.timerId);
     
     const mapInfo = MAPS.find(m => m.id === battle.mapId);
-    // Harder monsters = less time. Min 10s.
     let limit = 30 - Math.floor(mapInfo.minLvl / 5); 
     if(limit < 10) limit = 10;
     battle.timeLeft = limit;
@@ -681,7 +679,8 @@ function loadQuestion() {
         
         if(battle.timeLeft <= 0) {
             clearInterval(battle.timerId);
-            handleAns(null, null, null); // Timeout
+            // Time OUT: FORCE WRONG ANSWER (string 'TIMEOUT') so it triggers monsterAttack
+            handleAns(null, null, 'TIMEOUT_FORCE_WRONG'); 
         }
     }, 1000);
 
@@ -714,13 +713,12 @@ function handleAns(btn, choice, ans) {
         const isCrit = Math.random()*100 < stats.crit;
         let dmg = Math.floor(stats.atk * (isCrit?1.5:1) * (1 + battle.stats.currCombo*0.1));
         
-        // Traits
         if(battle.monster.t === 'T') dmg = Math.floor(dmg * 0.7); 
-        if(battle.isBoss) dmg = Math.floor(dmg * 0.8); // Boss defense
+        if(battle.isBoss) dmg = Math.floor(dmg * 0.8);
 
         if(battle.monster.t === 'S' && Math.random() < 0.3) { 
             dmg = 0; showFloatText("MISS (虛無)!", "#aaa"); 
-        } else if (battle.isBoss && Math.random() < 0.2) { // Boss dodge
+        } else if (battle.isBoss && Math.random() < 0.2) {
             dmg = 0; showFloatText("BOSS 閃避!", "#e74c3c");
         } else {
             battle.bossHp -= dmg; battle.stats.dmgDealt += dmg;
@@ -757,14 +755,12 @@ function monsterAttack() {
     if(battle.shieldTurns > 0) { battle.shieldTurns--; showFloatText("格擋!", "#3498db"); return; }
     if(Math.random()*100 < getStats().dodge) { showFloatText("閃避!", "#9b59b6"); return; }
     
-    // Atk Calculation
     let mAtk = battle.monster.atk + (MAPS.find(m=>m.id===battle.mapId).minLvl * 2);
-    if(battle.isBoss) mAtk *= 1.5; // Boss hits harder
+    if(battle.isBoss) mAtk *= 1.5; 
 
     let dmg = Math.floor(mAtk - (getStats().def * 0.3));
     dmg = Math.max(1, dmg);
 
-    // Boss Ultimate Check (30%)
     if(battle.isBoss && Math.random() < 0.3) {
         dmg = Math.floor(dmg * 2.5);
         AudioEngine.sfx.ult();
