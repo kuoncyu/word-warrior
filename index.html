@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>字靈獵人：打擊感進化 (V42)</title>
+    <title>字靈獵人：百層塔傳說 (V48)</title>
     <script src="moe_data.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&display=swap');
@@ -14,6 +14,8 @@
             --primary: #c23616;
             --accent: #fbc531;
             --luck: #00d2d3;
+            --enhance: #e056fd;
+            --boss: #e74c3c;
             --text: #f5f6fa;
             --font-main: 'Noto Serif TC', serif;
         }
@@ -27,29 +29,27 @@
             background: radial-gradient(circle at 50% 30%, #1e0505 0%, #000 100%);
         }
 
-        /* --- Animations (New) --- */
-        /* 怪物受傷：閃白 + 小震動 */
+        /* --- Animations --- */
         @keyframes monster-hit {
-            0% { transform: scale(1.5) translate(0,0); filter: brightness(1); }
-            20% { transform: scale(1.4) translate(-5px, 0); filter: brightness(2) drop-shadow(0 0 10px #fff); }
-            40% { transform: scale(1.5) translate(5px, 0); filter: brightness(1); }
-            60% { transform: scale(1.4) translate(-5px, 0); }
-            80% { transform: scale(1.5) translate(5px, 0); }
-            100% { transform: scale(1.5) translate(0,0); filter: brightness(1); }
+            0% { transform: scale(1) translate(0,0); filter: brightness(1); }
+            20% { transform: scale(0.9) translate(-5px, 0); filter: brightness(2) drop-shadow(0 0 10px #fff); }
+            40% { transform: scale(1) translate(5px, 0); filter: brightness(1); }
+            100% { transform: scale(1) translate(0,0); }
         }
-        
-        /* 玩家受傷：全螢幕紅閃 + 大震動 */
         @keyframes screen-shake-red {
-            0% { transform: translate(0,0); box-shadow: inset 0 0 0 transparent; }
-            10% { transform: translate(-10px, -10px); box-shadow: inset 0 0 50px rgba(255,0,0,0.5); }
-            30% { transform: translate(10px, 10px); box-shadow: inset 0 0 100px rgba(255,0,0,0.8); }
-            50% { transform: translate(-10px, 10px); box-shadow: inset 0 0 50px rgba(255,0,0,0.5); }
-            70% { transform: translate(10px, -10px); }
-            100% { transform: translate(0,0); box-shadow: inset 0 0 0 transparent; }
+            0%, 100% { transform: translate(0,0); box-shadow: inset 0 0 0 transparent; }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-5px, -5px); box-shadow: inset 0 0 50px rgba(255,0,0,0.6); }
+            20%, 40%, 60%, 80% { transform: translate(5px, 5px); }
+        }
+        @keyframes boss-ult {
+            0% { transform: scale(1.5); filter: hue-rotate(0deg); }
+            50% { transform: scale(1.8); filter: hue-rotate(90deg) brightness(2); }
+            100% { transform: scale(1.5); filter: hue-rotate(0deg); }
         }
 
         .anim-monster-hit { animation: monster-hit 0.4s ease-out; }
         .anim-player-hit { animation: screen-shake-red 0.5s ease-out; border: 2px solid red !important; }
+        .anim-boss-ult { animation: boss-ult 0.8s ease-in-out; }
 
         .embers {
             position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: -1;
@@ -63,13 +63,18 @@
             background: var(--panel-bg); border: 2px solid #571a1a;
             box-shadow: 0 0 80px rgba(194, 54, 22, 0.3); position: relative;
             display: flex; flex-direction: column; overflow: hidden;
-            transition: border 0.2s; /* Smooth border transition for hit effect */
+            transition: border 0.2s;
         }
         @media (min-width: 550px) { .app-container { border-radius: 12px; height: 95vh; } }
 
         /* UI Components */
-        .top-bar { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.8); border-bottom: 1px solid #333; }
-        .gems { color: var(--accent); font-size: 1.2rem; display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        .top-header { background: rgba(0,0,0,0.9); border-bottom: 1px solid #444; display: flex; flex-direction: column; }
+        .top-bar { padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .nav-bar { display: flex; height: 50px; }
+        .nav-btn { flex: 1; background: none; border: none; color: #555; font-size: 0.9rem; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
+        .nav-btn.active { color: var(--text); border-bottom-color: var(--primary); background: rgba(255,255,255,0.05); }
+        
+        .gems { color: var(--accent); font-size: 1.1rem; display: flex; align-items: center; gap: 5px; font-weight: bold; }
         
         .content { flex: 1; overflow-y: auto; padding: 15px; position: relative; scroll-behavior: smooth; }
         .tab-page { display: none; animation: fadeIn 0.4s; }
@@ -81,24 +86,14 @@
             color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 12px 25px;
             font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
             letter-spacing: 1px; width: 100%;
-            box-shadow: 0 0 15px rgba(194, 54, 22, 0.5); border-radius: 4px;
+            box-shadow: 0 0 15px rgba(194, 54, 22, 0.5); border-radius: 4px; margin-bottom: 8px;
         }
         .start-btn:active { transform: scale(0.96); filter: brightness(0.8); }
         .btn-secondary { background: #34495e; box-shadow: none; border-color: #57606f; }
-        .btn-dict { background: #27ae60; border-color: #2ecc71; margin-top: 8px; }
-        .btn-fix { background: #d35400; border-color: #e67e22; font-size: 0.8rem; padding: 8px; margin-top: 5px; }
+        .btn-dict { background: #27ae60; border-color: #2ecc71; font-size: 0.9rem; }
+        .btn-fix { background: #d35400; border-color: #e67e22; font-size: 0.8rem; padding: 5px; width: auto; display: inline-block; margin-top: 5px;}
 
-        /* Character Creation */
-        .char-select-container { display: flex; flex-direction: column; gap: 10px; height: 350px; overflow-y: auto; margin: 15px 0; padding-right: 5px; }
-        .char-card { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 8px; padding: 10px; cursor: pointer; transition: 0.2s; }
-        .char-card.selected { border-color: var(--accent); background: rgba(251, 197, 49, 0.15); box-shadow: 0 0 10px rgba(251,197,49,0.3); }
-        .char-card-icon { font-size: 2.5rem; margin-right: 15px; }
-        .char-card-info { flex: 1; text-align: left; }
-        .char-card-name { font-weight: bold; font-size: 1.1rem; color: #fff; }
-        .char-card-job { font-size: 0.8rem; color: var(--accent); margin-bottom: 2px; }
-        .char-card-desc { font-size: 0.7rem; color: #aaa; }
-
-        /* Stats & Equipment */
+        /* Character & Stats */
         .hero-summary { display:flex; align-items:center; gap:15px; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid #333; }
         .hero-avatar { font-size: 3.5rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
         .hero-info { flex:1; }
@@ -111,22 +106,32 @@
         .equip-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #333; }
         .equip-slot { aspect-ratio: 1; background: rgba(255,255,255,0.03); border: 1px solid #333; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; position: relative; transition: 0.2s; opacity: 0.5; filter: grayscale(1); }
         .slot-equipped { border-color: var(--accent); background: rgba(251, 197, 49, 0.15); opacity: 1; filter: none; box-shadow: inset 0 0 10px rgba(251, 197, 49, 0.2); }
-        .slot-icon { font-size: 1.6rem; }
+        .slot-icon { font-size: 1.6rem; position: relative; }
+        .enhance-badge { position: absolute; top:-5px; right:-10px; background: var(--enhance); color:#fff; font-size:0.6rem; padding:1px 4px; border-radius:4px; font-weight:bold; box-shadow: 0 0 5px var(--enhance); }
         .slot-name { font-size: 0.6rem; color: #7f8fa6; margin-top: 2px; }
         .slot-equipped .slot-name { color: #fff; font-weight: bold; }
 
-        /* Inventory Items */
+        /* Inventory */
         .inv-item { display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 10px; margin-bottom: 5px; border-left: 3px solid #555; border-radius: 4px; }
         .inv-actions { margin-left: auto; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
-        .btn-action { padding: 6px 10px; border: 1px solid #555; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.75rem; min-width: 60px; }
+        .btn-action { padding: 4px 8px; border: 1px solid #555; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.7rem; min-width: 50px; }
         .btn-equip { background: #353b48; }
+        .btn-enhance { background: #8e44ad; border-color: #9b59b6; }
         .btn-sell { background: #2c3e50; border-color: #c0392b; color: #e74c3c; }
+
+        /* Map Select */
+        .map-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .map-card { background: rgba(255,255,255,0.05); border: 1px solid #444; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+        .map-card:hover { border-color: var(--primary); background: rgba(194, 54, 22, 0.1); }
+        .map-card.locked { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; border-color: #555; }
+        .map-icon { font-size: 2.5rem; margin-bottom: 5px; }
+        .map-name { font-weight: bold; color: #fff; }
+        .map-info { font-size: 0.7rem; color: #aaa; margin-top: 5px; }
 
         /* Battle UI */
         .hp-bar-container { width:100%; height:12px; background:#111; border:1px solid #444; border-radius:2px; overflow:hidden; margin-bottom:2px; }
         .hp-fill { height:100%; width:100%; transition:width 0.3s; }
-        /* Timer Bar */
-        .timer-track { width: 100%; height: 6px; background: #333; margin-top: 10px; border-radius: 3px; overflow: hidden; }
+        .timer-track { width: 100%; height: 8px; background: #333; margin-top: 10px; border-radius: 4px; overflow: hidden; border: 1px solid #555; }
         .timer-bar { width: 100%; height: 100%; background: #00d2d3; transition: width 0.1s linear, background 0.3s; }
 
         .quiz-panel { background: rgba(30, 30, 35, 0.95); border: 1px solid #571a1a; padding: 20px; margin-top: 5px; border-radius: 8px; }
@@ -134,20 +139,22 @@
         #battle-tools { display:none; justify-content:center; gap:10px; margin-top:15px; flex-wrap: wrap; }
         .tool-btn { flex: 1; padding: 10px; font-size: 0.9rem; background: #34495e; min-width: 80px; }
         .flee-btn { background: #444; border-color: #7f8fa6; color: #a4b0be; flex: 0 0 100%; margin-top: 5px; }
-        #post-answer-actions { display: none; flex-direction: column; gap: 8px; margin-top: 10px; }
+        #post-answer-actions { display: none; flex-direction: column; gap: 5px; margin-top: 10px; }
         
-        .battle-prep-panel { text-align: center; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 8px; border: 1px solid #444; margin-top: 10px; }
-        .monster-rates-table { width: 100%; margin: 15px 0; border-collapse: collapse; font-size: 0.9rem; }
-        .monster-rates-table td { padding: 8px; border-bottom: 1px solid #333; text-align: left; }
-
-        .nav-bar { display: flex; background: #000; border-top: 1px solid #333; height: 60px; }
-        .nav-btn { flex: 1; background: none; border: none; color: #555; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; }
-        .nav-btn.active { color: var(--primary); background: rgba(194, 54, 22, 0.1); }
-
         .modal { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; }
         .modal-box { background: #1e272e; width: 85%; max-width: 400px; padding: 30px; border: 1px solid var(--primary); text-align: center; border-radius: 10px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         .float-txt { position: absolute; left: 50%; top: 40%; transform: translateX(-50%); font-weight:bold; pointer-events: none; animation: popUp 0.8s forwards; z-index: 150; text-shadow: 2px 2px 0 #000; }
         @keyframes popUp { 0%{opacity:0; transform:translate(-50%,0) scale(0.5);} 20%{opacity:1; transform:translate(-50%,-50px) scale(1.5);} 100%{opacity:0; transform:translate(-50%,-100px) scale(1);} }
+
+        /* Char Create specific */
+        .char-select-container { display: flex; flex-direction: column; gap: 10px; height: 350px; overflow-y: auto; margin: 15px 0; padding-right: 5px; }
+        .char-card { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 8px; padding: 10px; cursor: pointer; transition: 0.2s; }
+        .char-card.selected { border-color: var(--accent); background: rgba(251, 197, 49, 0.15); box-shadow: 0 0 10px rgba(251,197,49,0.3); }
+        .char-card-icon { font-size: 2.5rem; margin-right: 15px; }
+        .char-card-info { flex: 1; text-align: left; }
+        .char-card-name { font-weight: bold; font-size: 1.1rem; color: #fff; }
+        .char-card-job { font-size: 0.8rem; color: var(--accent); margin-bottom: 2px; }
+        .char-card-desc { font-size: 0.7rem; color: #aaa; }
 
         #cover-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
 
@@ -161,7 +168,6 @@
         .result-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid #444; }
         .res-row { display: flex; justify-content: space-between; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px; margin-bottom: 5px; }
         .res-val { font-weight: bold; color: #fff; }
-        .gacha-ticket-badge { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; position: absolute; top: -5px; right: -5px; font-weight: bold; animation: pulse 1s infinite; }
     </style>
 </head>
 <body>
@@ -171,7 +177,7 @@
 <div id="cover-screen">
     <div style="font-size:5rem; margin-bottom: 10px; filter: drop-shadow(0 0 20px var(--primary));">🔥</div>
     <div style="font-size: 3rem; color: var(--primary); letter-spacing: 3px; font-weight: bold;">字靈獵人</div>
-    <p style="color:#7f8fa6; letter-spacing: 2px;">V42 打擊感進化</p>
+    <p style="color:#7f8fa6; letter-spacing: 2px;">V48 百層塔傳說</p>
     <div id="status-text" style="color:#2ecc71; margin: 15px 0;">載入中...</div>
     <button class="start-btn" onclick="initGameSafe()">進入世界</button>
     <div style="margin-top:20px; color:#555; cursor:pointer; text-decoration:underline; font-size:0.8rem;" onclick="hardReset()">重置進度 (Reset)</div>
@@ -180,16 +186,22 @@
 <div class="modal" id="char-create-modal" style="z-index: 200;">
     <div class="modal-box">
         <h2 style="color:var(--accent);">選擇您的化身</h2>
-        <p style="color:#aaa; font-size:0.9rem;">不同的職業擁有不同的成長天賦</p>
         <div class="char-select-container" id="avatar-grid"></div>
         <button class="start-btn" onclick="confirmCharacter()">確認選擇</button>
     </div>
 </div>
 
 <div class="app-container" id="app-ui" style="display:none;">
-    <div class="top-bar">
-        <div style="cursor:pointer;" onclick="toggleMute()" id="sound-btn">🔊</div>
-        <div class="gems">💎 <span id="ui-gems">0</span></div>
+    <div class="top-header">
+        <div class="top-bar">
+            <div style="cursor:pointer;" onclick="toggleMute()" id="sound-btn">🔊</div>
+            <div class="gems">💎 <span id="ui-gems">0</span></div>
+        </div>
+        <div class="nav-bar">
+            <button class="nav-btn active" onclick="switchTab('char')">👤 獵人</button>
+            <button class="nav-btn" onclick="switchTab('battle')">⚔️ 戰鬥</button>
+            <button class="nav-btn" onclick="switchTab('gacha')">💎 寶庫</button>
+        </div>
     </div>
 
     <div id="tab-char" class="content tab-page active">
@@ -212,6 +224,11 @@
             <div class="stat-row"><span>⚡ 暴擊 (CRIT)</span><span id="stat-crit" style="color:#f1c40f">0%</span></div>
             <div class="stat-row"><span>💨 閃避 (DODGE)</span><span id="stat-dodge" style="color:#9b59b6">0%</span></div>
             <div class="stat-row"><span>🍀 幸運 (LUCK)</span><span id="stat-luck" style="color:var(--luck)">0%</span></div>
+            <div style="margin-top:10px; border-top:1px solid #444; padding-top:5px;">
+                <div class="stat-row"><span>🎯 正確率</span><span id="stat-acc">0%</span></div>
+                <div class="stat-row"><span>📝 總題數</span><span id="stat-total-q">0</span></div>
+                <div class="stat-row"><span>🔥 最高連對</span><span id="stat-max-streak">0</span></div>
+            </div>
         </div>
 
         <div class="equip-grid">
@@ -229,14 +246,9 @@
     </div>
 
     <div id="tab-battle" class="content tab-page">
-        <div id="battle-prep-screen">
-            <div class="battle-prep-panel">
-                <div style="font-size:4rem; margin-bottom:10px;">⚔️</div>
-                <div style="color:var(--primary); font-size:1.5rem; font-weight:bold;">狩獵場</div>
-                <div style="color:#7f8fa6; font-size:0.8rem; margin:10px 0;">準備進入危險區域</div>
-                <table class="monster-rates-table" id="monster-rates-list"></table>
-                <button class="start-btn" onclick="startBattleSequence()" style="margin-top:10px;">⚔️ 開始狩獵 (START)</button>
-            </div>
+        <div id="map-select-screen">
+            <div style="font-size:1.5rem; text-align:center; color:var(--primary); font-weight:bold; margin-bottom:15px;">選擇狩獵區域</div>
+            <div class="map-grid" id="map-grid"></div>
         </div>
 
         <div id="battle-active-screen" style="display:none;">
@@ -245,6 +257,7 @@
                 <div style="color:var(--primary); font-size:1.4rem; font-weight:bold;">
                     <span id="enemy-name">DEMON</span> <span style="font-size:1rem; color:#aaa;">Lv.<span id="enemy-level">1</span></span>
                 </div>
+                <div id="enemy-trait" style="font-size:0.8rem; color:#f1c40f; margin-bottom:5px; height:20px;"></div>
                 
                 <div class="hp-bar-container"><div id="boss-hp-bar" class="hp-fill" style="background:#c0392b;"></div></div>
                 <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#aaa; margin-bottom:10px;">
@@ -257,22 +270,19 @@
                 </div>
             </div>
 
-            <div class="timer-track">
-                <div class="timer-bar" id="battle-timer-bar"></div>
-            </div>
-            
+            <div class="timer-track"><div class="timer-bar" id="battle-timer-bar"></div></div>
             <div id="quiz-area" style="margin-top:10px;"></div>
             
             <div id="post-answer-actions">
                 <button class="start-btn" onclick="nextTurn()">➡️ 下一回合</button>
                 <button class="start-btn btn-dict" id="btn-dict-link" onclick="openDictionary()">🔍 教育部辭典 (查看解說)</button>
-                <button class="start-btn btn-fix" onclick="fixError()">🛠️ 修正答案 (並補回血量)</button>
+                <div style="text-align:center;"><button class="start-btn btn-fix" onclick="fixError()">🛠️ 修正答案 (補血)</button></div>
             </div>
 
             <div id="battle-tools" style="display:flex;">
                 <button class="start-btn tool-btn" onclick="usePotion()">🧪 補血 (<span id="btn-potion-count">0</span>)</button>
                 <button class="start-btn tool-btn" onclick="useShield()">🛡️ 護盾 (<span id="btn-shield-count">0</span>)</button>
-                <button class="start-btn tool-btn flee-btn" onclick="fleeBattle()">🏳️ 逃離戰鬥</button>
+                <button class="start-btn tool-btn flee-btn" onclick="fleeBattle()">🏳️ 撤退</button>
             </div>
         </div>
     </div>
@@ -281,23 +291,13 @@
         <div style="text-align:center; padding-top:40px;">
             <div style="font-size:7rem; margin-bottom:20px; filter:drop-shadow(0 0 30px var(--luck)); animation: float 3s infinite;">🎁</div>
             <h2 style="color:var(--accent);">幸運寶箱</h2>
-            
             <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:8px; display:inline-block; margin-bottom:15px; border:1px solid #444;">
                 目前持有：<span style="color:var(--accent); font-weight:bold; font-size:1.2rem;" id="gacha-gems-display">0</span> 💎
             </div>
-
             <div style="font-size: 0.9rem; color: var(--luck); margin-bottom: 10px; font-weight: bold;">幸運加成: +<span id="gacha-luck-val">0</span>%</div>
             <p style="color:#7f8fa6; margin-bottom:30px; font-size:0.9rem;">100 寶石 / 次<br>裝備等級隨角色等級提升！</p>
-            <button class="start-btn" id="btn-gacha-pull" style="background:var(--luck); color:#000; position:relative;" onclick="pullGacha()">
-                開啟 (100💎)
-            </button>
+            <button class="start-btn" id="btn-gacha-pull" style="background:var(--luck); color:#000; position:relative;" onclick="pullGacha()">開啟 (100💎)</button>
         </div>
-    </div>
-
-    <div class="nav-bar">
-        <button class="nav-btn active" onclick="switchTab('char')">👤 獵人</button>
-        <button class="nav-btn" onclick="switchTab('battle')">⚔️ 戰鬥</button>
-        <button class="nav-btn" onclick="switchTab('gacha')">💎 寶庫</button>
     </div>
 
     <div class="modal" id="daily-login-modal">
@@ -311,17 +311,24 @@
         </div>
     </div>
 
-    <div class="modal" id="battle-result-modal">
-        <div class="modal-box"></div>
+    <div class="modal" id="enhance-modal">
+        <div class="modal-box" style="border-color: var(--enhance);">
+            <div style="font-size:3rem; margin-bottom:5px;">⚒️</div>
+            <h2 style="color:var(--enhance); margin:0 0 10px 0;">裝備強化</h2>
+            <div id="enhance-info" style="color:#ddd; font-size:0.9rem; margin-bottom:15px; text-align:left;"></div>
+            <button class="start-btn" style="background:var(--enhance);" onclick="doEnhance()">強化 (消耗💎)</button>
+            <button class="start-btn btn-secondary" onclick="closeEnhanceModal()" style="margin-top:10px;">取消</button>
+        </div>
     </div>
+
+    <div class="modal" id="battle-result-modal"><div class="modal-box"></div></div>
 </div>
 
 <script>
 /**
- * 遊戲引擎 V42 (打擊感與成長版)
+ * 遊戲引擎 V48 (百層塔傳說 + Boss突變 + 33種怪物)
  */
 
-// --- Audio Engine (Enhanced SFX) ---
 const AudioEngine = {
     ctx: null, isMuted: false, intervalId: null, step: 0,
     init: function() {
@@ -330,77 +337,48 @@ const AudioEngine = {
     },
     playTone: function(freq, type, duration, vol=0.1, detune=0) {
         if(this.isMuted || !this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-        if(detune) osc.detune.value = detune;
-        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-        osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.start(); osc.stop(this.ctx.currentTime + duration);
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime); if(detune) osc.detune.value = detune;
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+        osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + duration);
     },
     playNoise: function(duration, vol) {
         if(this.isMuted || !this.ctx) return;
-        const bufferSize = this.ctx.sampleRate * duration;
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-        const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
-        const gain = this.ctx.createGain(); gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-        noise.connect(gain); gain.connect(this.ctx.destination); noise.start();
+        const b = this.ctx.createBuffer(1, this.ctx.sampleRate*duration, this.ctx.sampleRate);
+        const d = b.getChannelData(0); for(let i=0;i<b.length;i++) d[i]=Math.random()*2-1;
+        const n = this.ctx.createBufferSource(); n.buffer=b; const g=this.ctx.createGain(); g.gain.value=vol;
+        n.connect(g); g.connect(this.ctx.destination); n.start();
     },
-    
-    // SFX Collection
     sfx: {
         click: () => AudioEngine.playTone(800, 'sine', 0.05, 0.05),
         confirm: () => { AudioEngine.playTone(600, 'square', 0.1); setTimeout(()=>AudioEngine.playTone(800, 'square', 0.1), 100); },
         coin: () => { AudioEngine.playTone(1500, 'sine', 0.1); setTimeout(()=>AudioEngine.playTone(2000, 'sine', 0.2), 50); },
-        gacha: () => { 
-            [523, 659, 783, 1046, 1318].forEach((f,i)=> setTimeout(()=>AudioEngine.playTone(f, 'triangle', 0.2, 0.1), i*80));
-        },
-        equip: () => AudioEngine.playNoise(0.1, 0.2), 
+        enhance: () => { [400,500,600,800].forEach((f,i)=>setTimeout(()=>AudioEngine.playTone(f,'square',0.1,0.1),i*100)); },
+        enhanceFail: () => { AudioEngine.playTone(150, 'sawtooth', 0.5); },
+        gacha: () => { [523,659,783,1046,1318].forEach((f,i)=>setTimeout(()=>AudioEngine.playTone(f,'triangle',0.2,0.1),i*80)); },
         attack: () => { AudioEngine.playNoise(0.15, 0.3); AudioEngine.playTone(100, 'sawtooth', 0.2, 0.2); },
-        hit: () => { AudioEngine.playTone(80, 'sawtooth', 0.3, 0.4); }, // Low thud for player hit
+        hit: () => { AudioEngine.playTone(80, 'sawtooth', 0.3, 0.4); },
         win: () => { AudioEngine.playTone(660, 'sine', 0.1); setTimeout(()=>AudioEngine.playTone(880, 'sine', 0.3), 100); },
         wrong: () => { AudioEngine.playTone(150, 'sawtooth', 0.2); setTimeout(()=>AudioEngine.playTone(100, 'sawtooth', 0.2), 100); },
         tick: () => AudioEngine.playTone(1000, 'square', 0.05, 0.05),
-        victoryTheme: () => {
-             AudioEngine.stopBGM();
-             [523, 523, 523, 659, 783, 1046].forEach((f,i)=> setTimeout(()=>AudioEngine.playTone(f, 'square', 0.4, 0.2), i*180));
-        }
+        ult: () => { AudioEngine.playNoise(0.5, 0.5); [100, 200, 100].forEach((f,i)=> setTimeout(()=>AudioEngine.playTone(f, 'sawtooth', 0.2, 0.5), i*100)); },
+        victoryTheme: () => { AudioEngine.stopBGM(); [523, 523, 523, 659, 783, 1046].forEach((f,i)=> setTimeout(()=>AudioEngine.playTone(f, 'square', 0.4, 0.2), i*180)); }
     },
-
-    // BGM Sequencer
     playBGM: function(isBattle) {
         if(this.intervalId) clearInterval(this.intervalId);
         if(this.isMuted) return;
         this.step = 0;
         const speed = isBattle ? 115 : 300; 
         const BASS_LINE = [65.4, 65.4, 65.4, 65.4, 65.4, 65.4, 65.4, 65.4, 103.8, 103.8, 103.8, 103.8, 87.3, 87.3, 98.0, 116.5];
-
         this.intervalId = setInterval(() => {
             if(this.isMuted) return;
             if (isBattle) {
-                if (this.step % 4 === 0) { AudioEngine.playTone(150, 'sine', 0.1, 0.8); AudioEngine.playTone(50, 'sine', 0.1, 0.8); } // Kick
-                if (this.step % 8 === 4) AudioEngine.playNoise(0.1, 0.3); // Snare
-                if (this.step % 2 === 0) { 
-                    const bass = BASS_LINE[Math.floor(this.step/16) % BASS_LINE.length];
-                    AudioEngine.playTone(bass, 'sawtooth', 0.2, 0.15); 
-                    AudioEngine.playTone(bass, 'sawtooth', 0.2, 0.15, 10);
-                }
-                const barIndex = Math.floor(this.step/16);
-                if (barIndex >= 2) { 
-                     const motifStep = this.step % 32;
-                     let lead = 0;
-                     if(motifStep===0) lead=523.25; if(motifStep===6) lead=622.25; if(motifStep===12) lead=783.99; if(motifStep===16) lead=698.46;
-                     if(lead) AudioEngine.playTone(lead, 'square', 0.2, 0.08);
-                }
+                if (this.step % 4 === 0) { AudioEngine.playTone(150, 'sine', 0.1, 0.8); AudioEngine.playTone(50, 'sine', 0.1, 0.8); }
+                if (this.step % 8 === 4) AudioEngine.playNoise(0.1, 0.3);
+                if (this.step % 2 === 0) { const bass = BASS_LINE[Math.floor(this.step/16) % BASS_LINE.length]; AudioEngine.playTone(bass, 'sawtooth', 0.2, 0.15); AudioEngine.playTone(bass, 'sawtooth', 0.2, 0.15, 10); }
+                if (Math.floor(this.step/16) >= 2) { const ms = this.step % 32; let l = 0; if(ms===0)l=523.25; if(ms===6)l=622.25; if(ms===12)l=783.99; if(ms===16)l=698.46; if(l) AudioEngine.playTone(l, 'square', 0.2, 0.08); }
             } else {
-                if (this.step % 8 === 0) {
-                    const n = [261, 293, 329, 392][Math.floor(this.step/8)%4];
-                    AudioEngine.playTone(n, 'sine', 1.5, 0.05); AudioEngine.playTone(n*1.5, 'sine', 1.5, 0.03);
-                }
+                if (this.step % 8 === 0) { const n = [261, 293, 329, 392][Math.floor(this.step/8)%4]; AudioEngine.playTone(n, 'sine', 1.5, 0.05); AudioEngine.playTone(n*1.5, 'sine', 1.5, 0.03); }
             }
             this.step++;
         }, speed);
@@ -410,13 +388,12 @@ const AudioEngine = {
 
 // --- Game Data ---
 const JOB_DATA = {
-    knight: { id:'knight', name:'帝國騎士', desc:'攻擊/防禦 平衡成長', growth:{atk:1.2, def:1.2, hp:1.0, luck:1.0, crit:0, dodge:0} },
-    guardian: { id:'guardian', name:'盾牌護衛', desc:'防禦/血量 極限成長', growth:{atk:0.8, def:1.5, hp:1.5, luck:1.0, crit:0, dodge:0} },
-    shaman: { id:'shaman', name:'部落巫師', desc:'攻擊/幸運 尋寶專家', growth:{atk:1.3, def:0.8, hp:0.8, luck:1.5, crit:0, dodge:0} },
-    hunter: { id:'hunter', name:'森林獵人', desc:'攻擊/爆擊 暴力輸出', growth:{atk:1.4, def:0.8, hp:0.9, luck:1.0, crit:2, dodge:0} },
-    assassin: { id:'assassin', name:'皇家刺客', desc:'爆擊/閃避 靈活殺手', growth:{atk:1.2, def:0.7, hp:0.8, luck:1.0, crit:1.5, dodge:2} }
+    knight: { name:'帝國騎士', desc:'攻守平衡', growth:{atk:1.2, def:1.2, hp:1.0, luck:1.0, crit:0, dodge:0} },
+    guardian: { name:'盾牌護衛', desc:'防禦血量', growth:{atk:0.8, def:1.5, hp:1.5, luck:1.0, crit:0, dodge:0} },
+    shaman: { name:'部落巫師', desc:'尋寶專家', growth:{atk:1.3, def:0.8, hp:0.8, luck:1.5, crit:0, dodge:0} },
+    hunter: { name:'森林獵人', desc:'暴力輸出', growth:{atk:1.4, def:0.8, hp:0.9, luck:1.0, crit:2, dodge:0} },
+    assassin: { name:'皇家刺客', desc:'閃避殺手', growth:{atk:1.2, def:0.7, hp:0.8, luck:1.0, crit:1.5, dodge:2} }
 };
-
 const PRESET_CHARS = [
     { n:'亞瑟', i:'🤴', job:'knight' }, { n:'貞德', i:'👸', job:'knight' },
     { n:'鐵壁', i:'👮', job:'guardian' }, { n:'鋼盾', i:'👷‍♀️', job:'guardian' },
@@ -425,229 +402,175 @@ const PRESET_CHARS = [
     { n:'半藏', i:'🥷', job:'assassin' }, { n:'黑寡婦',i:'🕵️‍♀️', job:'assassin' }
 ];
 
-// Added ATK stat for monster scaling
-const TIERS = [
-    { id:'slime', n:'史萊姆', i:'💧', hp:30, atk:5, xp:10, minLvl:1, chance:40 },
-    { id:'bat', n:'吸血蝙蝠', i:'🦇', hp:50, atk:8, xp:20, minLvl:2, chance:30 },
-    { id:'skel', n:'骷髏兵', i:'💀', hp:80, atk:12, xp:35, minLvl:5, chance:18 },
-    { id:'wolf', n:'魔狼', i:'🐺', hp:120, atk:18, xp:50, minLvl:8, chance:10 },
-    { id:'dragon', n:'紅龍', i:'🐲', hp:300, atk:40, xp:200, minLvl:15, chance:2 }
+// Expanded Monster DB (33 Monsters)
+// trait codes: R=reflect, H=regen, T=tank, G=glass, S=ghost (speed), B=boss
+const MONSTERS = {
+    // Lv 1-10
+    m01: { n:'史萊姆', i:'💧', hp:30, atk:5, xp:10, t:'' },
+    m02: { n:'蝙蝠', i:'🦇', hp:40, atk:8, xp:12, t:'' },
+    m03: { n:'野鼠', i:'🐀', hp:35, atk:10, xp:15, t:'' },
+    // Lv 10-20
+    m04: { n:'魔狼', i:'🐺', hp:80, atk:15, xp:30, t:'G' },
+    m05: { n:'巨蜘蛛', i:'🕷️', hp:100, atk:18, xp:35, t:'' },
+    m06: { n:'毒蛇', i:'🐍', hp:90, atk:22, xp:40, t:'S' },
+    // Lv 20-30
+    m07: { n:'骷髏兵', i:'💀', hp:150, atk:25, xp:60, t:'' },
+    m08: { n:'殭屍', i:'🧟', hp:200, atk:20, xp:65, t:'H' },
+    m09: { n:'幽靈', i:'👻', hp:120, atk:35, xp:70, t:'S' },
+    // Lv 30-40
+    m10: { n:'岩石魔像', i:'🗿', hp:400, atk:30, xp:100, t:'T' },
+    m11: { n:'半獸人', i:'👹', hp:350, atk:45, xp:110, t:'' },
+    m12: { n:'哥布林王', i:'👺', hp:300, atk:50, xp:120, t:'G' },
+    // Lv 40-50
+    m13: { n:'吸血鬼', i:'🧛', hp:500, atk:60, xp:180, t:'H' },
+    m14: { n:'石像鬼', i:'🦇', hp:600, atk:55, xp:190, t:'T' },
+    m15: { n:'黑魔女', i:'🧙‍♀️', hp:450, atk:80, xp:200, t:'G' },
+    // Lv 50-60
+    m16: { n:'蜥蜴人', i:'🦎', hp:800, atk:70, xp:300, t:'H' },
+    m17: { n:'九頭蛇', i:'🐉', hp:1000, atk:80, xp:320, t:'R' },
+    m18: { n:'鐵甲龜', i:'🐢', hp:1500, atk:50, xp:350, t:'T' },
+    // Lv 60-70
+    m19: { n:'雪怪', i:'🦍', hp:1200, atk:100, xp:450, t:'T' },
+    m20: { n:'冰魔像', i:'⛄', hp:1400, atk:90, xp:480, t:'R' },
+    m21: { n:'霜狼', i:'🐺', hp:1000, atk:120, xp:500, t:'G' },
+    // Lv 70-80
+    m22: { n:'木乃伊', i:'🤕', hp:1800, atk:110, xp:650, t:'T' },
+    m23: { n:'巨蠍', i:'🦂', hp:1600, atk:130, xp:700, t:'R' },
+    m24: { n:'阿努比斯', i:'🐶', hp:2000, atk:150, xp:800, t:'S' },
+    // Lv 80-90
+    m25: { n:'惡魔', i:'👿', hp:3000, atk:200, xp:1000, t:'H' },
+    m26: { n:'魅魔', i:'🧚‍♀️', hp:2500, atk:250, xp:1100, t:'G' },
+    m27: { n:'地獄犬', i:'🐕', hp:2800, atk:220, xp:1200, t:'G' },
+    // Lv 90-100
+    m28: { n:'紅龍', i:'🐲', hp:5000, atk:300, xp:2000, t:'B' },
+    m29: { n:'鳳凰', i:'🦅', hp:4500, atk:350, xp:2200, t:'H' },
+    m30: { n:'虛空行者', i:'👽', hp:6000, atk:400, xp:2500, t:'S' },
+    // Lv 100 Final
+    m31: { n:'混沌神', i:'🌌', hp:10000, atk:600, xp:5000, t:'B' }
+};
+
+// 11 Maps (Every 10 levels)
+const MAPS = [
+    { id:'m1', n:'新手村 (Lv.1)', minLvl:1, icon:'🛖', mons:['m01','m02','m03'] },
+    { id:'m2', n:'迷霧森林 (Lv.10)', minLvl:10, icon:'🌲', mons:['m04','m05','m06'] },
+    { id:'m3', n:'荒涼墓園 (Lv.20)', minLvl:20, icon:'🪦', mons:['m07','m08','m09'] },
+    { id:'m4', n:'岩石峽谷 (Lv.30)', minLvl:30, icon:'⛰️', mons:['m10','m11','m12'] },
+    { id:'m5', n:'吸血古堡 (Lv.40)', minLvl:40, icon:'🏰', mons:['m13','m14','m15'] },
+    { id:'m6', n:'劇毒沼澤 (Lv.50)', minLvl:50, icon:'🐊', mons:['m16','m17','m18'] },
+    { id:'m7', n:'極寒冰原 (Lv.60)', minLvl:60, icon:'❄️', mons:['m19','m20','m21'] },
+    { id:'m8', n:'黃沙遺跡 (Lv.70)', minLvl:70, icon:'🕌', mons:['m22','m23','m24'] },
+    { id:'m9', n:'燃燒地獄 (Lv.80)', minLvl:80, icon:'🔥', mons:['m25','m26','m27'] },
+    { id:'m10', n:'巨龍巢穴 (Lv.90)', minLvl:90, icon:'🌋', mons:['m28','m29','m30'] },
+    { id:'m11', n:'虛空之門 (Lv.100)', minLvl:100, icon:'🌌', mons:['m30','m28','m31'] }
 ];
 
-const DAILY_REWARDS = [
-    { t: 'gems', v: 30, i: '💎', n:'寶石' }, { t: 'xp', v: 50, i: '✨', n:'經驗' },
-    { t: 'potion', v: 2, i: '🧪', n:'藥水' }, { t: 'gems', v: 50, i: '💎', n:'寶石' },
-    { t: 'xp', v: 100, i: '✨', n:'經驗' }, { t: 'shield', v: 2, i: '🛡️', n:'護盾' },
-    { t: 'ticket', v: 1, i: '🎫', n:'免費抽' }
-];
+const DAILY_REWARDS = [ {t:'gems',v:30,i:'💎',n:'寶石'}, {t:'xp',v:50,i:'✨',n:'經驗'}, {t:'potion',v:2,i:'🧪',n:'藥水'}, {t:'gems',v:50,i:'💎',n:'寶石'}, {t:'xp',v:100,i:'✨',n:'經驗'}, {t:'shield',v:2,i:'🛡️',n:'護盾'}, {t:'ticket',v:1,i:'🎫',n:'免費抽'} ];
 
 let player = {
-    name: "Hunter", avatar: "🥷", job: "knight",
-    gems: 100, xp: 0, level: 1, 
-    inventory: [], equipped: {}, 
-    potions: 3, shields: 1,
-    lastLogin: "", loginStreak: 0, gachaTickets: 0
+    name: "Hunter", avatar: "🥷", job: "knight", gems: 100, xp: 0, level: 1, inventory: [], equipped: {}, potions: 3, shields: 1, lastLogin: "", loginStreak: 0, gachaTickets: 0,
+    totalQ: 0, correctQ: 0, maxStreak: 0
 };
+let battle = { active: false, mapId: 'm1', timerId: null, timeLeft: 30, lastDamage: 0, stats: {} };
+let questionBank = [], customCorrections = {}, selectedCharIndex = 0, enhanceTargetIdx = -1;
 
-let battle = { 
-    active: false, currentQ: null, 
-    timerId: null, timeLeft: 30, lastDamage: 0,
-    stats: { turns: 0, correct: 0, maxCombo: 0, currCombo: 0, dmgTaken: 0, dmgDealt: 0 } 
-};
-let questionBank = [];
-let customCorrections = {}; 
-let selectedCharIndex = 0;
-
-// --- Init ---
 function initGameSafe() {
-    AudioEngine.init();
-    AudioEngine.sfx.click();
-    AudioEngine.playBGM(false); 
-    loadData();
-    parseQuestionBank(); 
-    renderMonsterRates();
-
-    if (!player.job || player.name === "Hunter") {
-        document.getElementById('cover-screen').style.display = 'none';
-        showCharacterCreation();
-    } else {
-        updateUI();
-        document.getElementById('cover-screen').style.display = 'none';
-        document.getElementById('app-ui').style.display = 'flex';
-        checkDailyLogin();
-    }
+    AudioEngine.init(); AudioEngine.sfx.click(); AudioEngine.playBGM(false); 
+    loadData(); parseQuestionBank(); renderMaps();
+    if (!player.job || player.name === "Hunter") { document.getElementById('cover-screen').style.display = 'none'; showCharacterCreation(); }
+    else { updateUI(); document.getElementById('cover-screen').style.display = 'none'; document.getElementById('app-ui').style.display = 'flex'; checkDailyLogin(); }
 }
 
 function loadData() {
-    const d = JSON.parse(localStorage.getItem('rpg_v42_save'));
-    if (d) {
-        player = { ...player, ...d.player };
-        if(!player.potions) player.potions = 3;
-        if(!player.shields) player.shields = 1;
-        if(!player.job) player.job = 'knight';
-    }
-    const fixes = JSON.parse(localStorage.getItem('rpg_fixes'));
-    if(fixes) customCorrections = fixes;
+    const d = JSON.parse(localStorage.getItem('rpg_v48_save'));
+    if (d) { player = { ...player, ...d.player }; if(!player.totalQ) player.totalQ=0; }
+    const fixes = JSON.parse(localStorage.getItem('rpg_fixes')); if(fixes) customCorrections = fixes;
 }
-
-function saveData() { localStorage.setItem('rpg_v42_save', JSON.stringify({ player })); }
+function saveData() { localStorage.setItem('rpg_v48_save', JSON.stringify({ player })); }
 function saveCorrections() { localStorage.setItem('rpg_fixes', JSON.stringify(customCorrections)); }
+function hardReset() { if(confirm('確定要刪除所有進度嗎？')) { localStorage.removeItem('rpg_v48_save'); location.reload(); } }
 
-function hardReset() {
-    if(confirm('確定要刪除所有進度嗎？')) {
-        localStorage.removeItem('rpg_v42_save');
-        localStorage.removeItem('rpg_fixes'); 
-        location.reload();
-    }
-}
-
-// --- Char Create ---
+// --- Character & Stats ---
 function showCharacterCreation() {
-    const grid = document.getElementById('avatar-grid');
-    grid.innerHTML = '';
+    const grid = document.getElementById('avatar-grid'); grid.innerHTML = '';
     PRESET_CHARS.forEach((char, idx) => {
-        const job = JOB_DATA[char.job];
-        const div = document.createElement('div');
-        div.className = 'char-card';
+        const job = JOB_DATA[char.job]; const div = document.createElement('div'); div.className = 'char-card';
         div.onclick = () => { AudioEngine.sfx.click(); selectChar(div, idx); };
         div.innerHTML = `<div class="char-card-icon">${char.i}</div><div class="char-card-info"><div class="char-card-name">${char.n}</div><div class="char-card-job">${job.name}</div><div class="char-card-desc">${job.desc}</div></div>`;
         grid.appendChild(div);
     });
-    selectChar(grid.children[0], 0);
-    document.getElementById('char-create-modal').style.display = 'flex';
+    selectChar(grid.children[0], 0); document.getElementById('char-create-modal').style.display = 'flex';
 }
-function selectChar(el, idx) {
-    document.querySelectorAll('.char-card').forEach(e => e.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedCharIndex = idx;
-}
-function confirmCharacter() {
-    AudioEngine.sfx.confirm();
-    const char = PRESET_CHARS[selectedCharIndex];
-    player.name = char.n; player.avatar = char.i; player.job = char.job;
-    saveData();
-    document.getElementById('char-create-modal').style.display = 'none';
-    document.getElementById('app-ui').style.display = 'flex';
-    updateUI();
-    checkDailyLogin();
-}
+function selectChar(el, idx) { document.querySelectorAll('.char-card').forEach(e => e.classList.remove('selected')); el.classList.add('selected'); selectedCharIndex = idx; }
+function confirmCharacter() { AudioEngine.sfx.confirm(); const char = PRESET_CHARS[selectedCharIndex]; player.name = char.n; player.avatar = char.i; player.job = char.job; saveData(); document.getElementById('char-create-modal').style.display = 'none'; document.getElementById('app-ui').style.display = 'flex'; updateUI(); checkDailyLogin(); }
 
-// --- Question Bank ---
 function parseQuestionBank() {
-    if(!window.MOE_DATA_STRING) { questionBank = [{q:'測試', a:'答案', w:['錯1']}]; return; }
-    let raw = window.MOE_DATA_STRING;
-    raw = raw.replace(/2/g, 'ˊ').replace(/3/g, 'ˇ').replace(/4/g, 'ˋ').replace(/5/g, '˙');
-    const lines = raw.trim().split('\n');
-    questionBank = [];
-    lines.forEach(line => {
-        let p = line.split('|');
-        if(p.length < 4) return;
-        const clean = (s) => s.replace(/1/g, '').replace(/2/g, 'ˊ').replace(/3/g, 'ˇ').replace(/4/g, 'ˋ').replace(/5/g, '˙');
-        let type = p[0], q = p[1], a = p[2], w = p[3];
-        if (type === '1') q = clean(q); else { a = clean(a); w = clean(w); }
-        if(customCorrections[q]) { a = customCorrections[q]; }
-        questionBank.push({ type: type, q: q, a: a, w: w.split(',') });
-    });
-}
-
-function fixError() {
-    AudioEngine.sfx.click();
-    if(!battle.currentQ) return;
-    const qKey = battle.currentQ.q;
-    const oldAns = battle.currentQ.a;
-    
-    const newAns = prompt(`題目：「${qKey}」\n目前答案：「${oldAns}」\n請輸入正確答案：`);
-    
-    if(newAns && newAns.trim() !== "" && newAns !== oldAns) {
-        customCorrections[qKey] = newAns.trim();
-        saveCorrections();
-        battle.currentQ.a = newAns.trim();
-        
-        if(battle.lastDamage > 0) {
-            player.hp = Math.min(getStats().hp, battle.playerHp + battle.lastDamage);
-            battle.playerHp += battle.lastDamage;
-            battle.stats.dmgTaken -= battle.lastDamage;
-            battle.lastDamage = 0;
-            alert(`已修正為「${newAns}」！\n系統判定為誤判，補回生命值。`);
-            updateBattleUI();
-        } else {
-            alert(`已修正為「${newAns}」！\n下次遇到此題將使用新答案。`);
-        }
+    if(typeof window.MOE_DATA_STRING !== 'undefined') {
+        let raw = window.MOE_DATA_STRING.replace(/2/g, 'ˊ').replace(/3/g, 'ˇ').replace(/4/g, 'ˋ').replace(/5/g, '˙');
+        const lines = raw.trim().split('\n'); questionBank = [];
+        lines.forEach(line => {
+            let p = line.split('|'); if(p.length < 4) return;
+            const clean = (s) => s.replace(/1/g, '').replace(/2/g, 'ˊ').replace(/3/g, 'ˇ').replace(/4/g, 'ˋ').replace(/5/g, '˙');
+            let type = p[0], q = p[1], a = p[2], w = p[3]; if (type === '1') q = clean(q); else { a = clean(a); w = clean(w); }
+            if(customCorrections[q]) a = customCorrections[q];
+            questionBank.push({ type: type, q: q, a: a, w: w.split(',') });
+        });
+    } else {
+        questionBank = [{q:'資料庫未讀取', a:'請確保檔案同目錄', w:['錯誤']}];
+        alert("⚠️ 錯誤：無法讀取 moe_data.js\n請確保該檔案與字靈獵人.html 位於同一個資料夾中！");
     }
 }
 
-// --- Daily Login ---
 function checkDailyLogin() {
-    const today = new Date().toDateString();
-    if (player.lastLogin === today) return;
+    const today = new Date().toDateString(); if (player.lastLogin === today) return;
     const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
     if (player.lastLogin === yesterday.toDateString()) player.loginStreak++; else player.loginStreak = 1;
-    const streakIdx = (player.loginStreak - 1) % 7;
-    const reward = DAILY_REWARDS[streakIdx];
-    if(reward.t === 'gems') player.gems += reward.v;
-    if(reward.t === 'xp') addXp(reward.v);
-    if(reward.t === 'potion') player.potions += reward.v;
-    if(reward.t === 'shield') player.shields += reward.v;
-    if(reward.t === 'ticket') player.gachaTickets += reward.v;
+    const reward = DAILY_REWARDS[(player.loginStreak - 1) % 7];
+    if(reward.t === 'gems') player.gems += reward.v; if(reward.t === 'xp') addXp(reward.v); if(reward.t === 'potion') player.potions += reward.v; if(reward.t === 'shield') player.shields += reward.v; if(reward.t === 'ticket') player.gachaTickets += reward.v;
     player.lastLogin = today; saveData(); updateUI();
-    
     const list = document.getElementById('daily-list'); list.innerHTML = '';
     DAILY_REWARDS.forEach((r, idx) => {
-        const div = document.createElement('div');
-        let cls = 'daily-day'; if (idx < streakIdx) cls += ' claimed'; if (idx === streakIdx) cls += ' active';
-        div.className = cls; div.innerHTML = `<div class="daily-icon">${r.i}</div><div class="daily-txt">${idx+1}天<br>${r.n}x${r.v}</div>`;
-        list.appendChild(div);
+        const div = document.createElement('div'); let cls = 'daily-day'; if (idx < (player.loginStreak-1)%7) cls += ' claimed'; if (idx === (player.loginStreak-1)%7) cls += ' active';
+        div.className = cls; div.innerHTML = `<div class="daily-icon">${r.i}</div><div class="daily-txt">${idx+1}天<br>${r.n}x${r.v}</div>`; list.appendChild(div);
     });
-    document.getElementById('today-reward-msg').innerText = `獲得：${reward.n} x${reward.v}`;
-    document.getElementById('daily-login-modal').style.display = 'flex';
+    document.getElementById('today-reward-msg').innerText = `獲得：${reward.n} x${reward.v}`; document.getElementById('daily-login-modal').style.display = 'flex';
 }
 function closeDailyModal() { AudioEngine.sfx.confirm(); document.getElementById('daily-login-modal').style.display = 'none'; }
 
-// --- Stats & UI ---
 function getStats() {
     const job = JOB_DATA[player.job] || JOB_DATA.knight; const growth = job.growth;
-    let base = {
-        hp: Math.floor(100 + (player.level * 10 * growth.hp)), atk: Math.floor(10 + (player.level * 2 * growth.atk)),
-        def: Math.floor(5 + (player.level * 1 * growth.def)), crit: 5 + (player.level * growth.crit),
-        dodge: 5 + (player.level * growth.dodge), luck: 0 + (player.level * growth.luck)
-    };
+    let base = { hp: Math.floor(100 + (player.level * 10 * growth.hp)), atk: Math.floor(10 + (player.level * 2 * growth.atk)), def: Math.floor(5 + (player.level * 1 * growth.def)), crit: 5 + (player.level * growth.crit), dodge: 5 + (player.level * growth.dodge), luck: 0 + (player.level * growth.luck) };
     Object.values(player.equipped).forEach(item => {
-        if(item) { base.hp += (item.hp||0); base.atk += (item.atk||0); base.def += (item.def||0); base.crit += (item.crit||0); base.dodge += (item.dodge||0); base.luck += (item.luck||0); }
+        if(item) {
+            let mult = 1 + (item.level||0) * 0.1; 
+            base.hp += Math.floor((item.hp||0)*mult); base.atk += Math.floor((item.atk||0)*mult); base.def += Math.floor((item.def||0)*mult); base.crit += (item.crit||0); base.dodge += (item.dodge||0); base.luck += (item.luck||0);
+            if(item.bonus) { Object.keys(item.bonus).forEach(k => base[k] += item.bonus[k]); }
+        }
     });
     base.crit = Math.min(100, Math.floor(base.crit)); base.dodge = Math.min(80, Math.floor(base.dodge)); base.luck = Math.floor(base.luck);
     return base;
 }
 
-function addXp(amount) {
-    player.xp += amount; const req = player.level * 100;
-    if (player.xp >= req) { player.xp -= req; player.level++; AudioEngine.sfx.win(); showFloatText("等級提升!", "#f1c40f"); }
-    updateUI(); saveData();
-}
-
 function updateUI() {
-    const s = getStats();
+    const s = getStats(); const acc = player.totalQ > 0 ? Math.round((player.correctQ/player.totalQ)*100) : 0;
     document.getElementById('ui-gems').innerText = player.gems; document.getElementById('ui-lvl').innerText = player.level;
-    document.getElementById('ui-xp-text').innerText = `${player.xp}/${player.level*100}`;
-    document.getElementById('ui-xp-bar').style.width = `${(player.xp/(player.level*100))*100}%`;
-    document.getElementById('ui-name').innerText = player.name; document.getElementById('ui-avatar').innerText = player.avatar;
-    document.getElementById('ui-job').innerText = JOB_DATA[player.job].name;
-    document.getElementById('stat-atk').innerText = s.atk; document.getElementById('stat-def').innerText = s.def;
-    document.getElementById('stat-hp').innerText = s.hp; document.getElementById('stat-crit').innerText = s.crit + "%";
-    document.getElementById('stat-dodge').innerText = s.dodge + "%"; document.getElementById('stat-luck').innerText = s.luck + "%";
-    document.getElementById('gacha-luck-val').innerText = s.luck;
-    document.getElementById('gacha-gems-display').innerText = player.gems; // Update gems on Gacha page
+    document.getElementById('ui-xp-text').innerText = `${player.xp}/${player.level*100}`; document.getElementById('ui-xp-bar').style.width = `${(player.xp/(player.level*100))*100}%`;
+    document.getElementById('ui-name').innerText = player.name; document.getElementById('ui-avatar').innerText = player.avatar; document.getElementById('ui-job').innerText = JOB_DATA[player.job].name;
+    document.getElementById('stat-atk').innerText = s.atk; document.getElementById('stat-def').innerText = s.def; document.getElementById('stat-hp').innerText = s.hp;
+    document.getElementById('stat-crit').innerText = s.crit + "%"; document.getElementById('stat-dodge').innerText = s.dodge + "%"; document.getElementById('stat-luck').innerText = s.luck + "%";
+    document.getElementById('stat-acc').innerText = acc + "%"; document.getElementById('stat-total-q').innerText = player.totalQ; document.getElementById('stat-max-streak').innerText = player.maxStreak || 0;
+    document.getElementById('gacha-gems-display').innerText = player.gems;
 
     const names = {head:'頭盔',body:'鎧甲',legs:'護腿',feet:'戰靴',gloves:'護手',weapon:'武器',offhand:'盾牌',accessory:'飾品'};
     ['head','body','legs','feet','gloves','weapon','offhand','accessory'].forEach(slot => {
         const el = document.getElementById(`slot-${slot}`); const item = player.equipped[slot];
-        if (item) { el.innerHTML = `<div class="slot-icon">${item.icon}</div><div class="slot-name">${item.name}</div>`; el.classList.add('slot-equipped'); el.classList.remove('slot-empty'); } 
-        else { const icons = {head:'⛑️',body:'👕',legs:'👖',feet:'👢',gloves:'🧤',weapon:'⚔️',offhand:'🛡️',accessory:'💍'}; el.innerHTML = `<div class="slot-icon">${icons[slot]}</div><div class="slot-name">${names[slot]}</div>`; el.classList.remove('slot-equipped'); el.classList.add('slot-empty'); }
+        if (item) { el.innerHTML = `<div class="slot-icon">${item.icon}${item.level?`<span class="enhance-badge">+${item.level}</span>`:''}</div><div class="slot-name">${item.name}</div>`; el.className='equip-slot slot-equipped'; } 
+        else { el.innerHTML = `<div class="slot-icon">${{head:'⛑️',body:'👕',legs:'👖',feet:'👢',gloves:'🧤',weapon:'⚔️',offhand:'🛡️',accessory:'💍'}[slot]}</div><div class="slot-name">${names[slot]}</div>`; el.className='equip-slot'; }
     });
 
     const invDiv = document.getElementById('inventory-list'); invDiv.innerHTML = '';
     player.inventory.forEach((item, idx) => {
         const d = document.createElement('div'); d.className = 'inv-item';
-        d.innerHTML = `<div style="font-size:1.5rem; margin-right:10px;">${item.icon}</div><div><div style="font-weight:bold; color:${getRarityColor(item.rarity)}">${item.name}</div><div style="font-size:0.7rem; color:#aaa;">${getItemDesc(item)}</div></div><div class="inv-actions"><button class="btn-action btn-equip" onclick="equipItem(${idx})">裝備</button><button class="btn-action btn-sell" onclick="sellItem(${idx})">出售</button></div>`;
+        d.innerHTML = `<div style="font-size:1.5rem; margin-right:10px;">${item.icon}</div><div><div style="font-weight:bold; color:${getRarityColor(item.rarity)}">${item.name} ${item.level?`+${item.level}`:''}</div><div style="font-size:0.7rem; color:#aaa;">${getItemDesc(item)}</div></div><div class="inv-actions"><button class="btn-action btn-equip" onclick="equipItem(${idx})">裝備</button><button class="btn-action btn-enhance" onclick="openEnhance(${idx})">強化</button><button class="btn-action btn-sell" onclick="sellItem(${idx})">出售</button></div>`;
         invDiv.appendChild(d);
     });
     
@@ -659,33 +582,71 @@ function updateUI() {
 function getRarityColor(r) { return r===3?'#e74c3c':(r===2?'#f1c40f':(r===1?'#3498db':'#fff')); }
 function getItemDesc(i) { let s=[]; if(i.atk) s.push(`攻+${i.atk}`); if(i.def) s.push(`防+${i.def}`); if(i.hp) s.push(`命+${i.hp}`); if(i.luck) s.push(`運+${i.luck}`); return s.join(' '); }
 
-// --- Battle System ---
-// Trigger CSS Animation helper
-function triggerAnim(id, anim) {
-    const el = document.getElementById(id);
-    el.classList.remove(anim);
-    void el.offsetWidth; // Force reflow
-    el.classList.add(anim);
+// --- Map & Battle System ---
+function renderMaps() {
+    const grid = document.getElementById('map-grid'); grid.innerHTML = '';
+    MAPS.forEach(m => {
+        const div = document.createElement('div');
+        const unlockLvl = player.level + 5; // Allow challenge if level+5 >= map level
+        const isLocked = unlockLvl < m.minLvl;
+        div.className = `map-card ${isLocked ? 'locked' : ''}`;
+        div.innerHTML = `
+            <div class="map-icon">${isLocked ? '🔒' : m.icon}</div>
+            <div class="map-name">${m.n}</div>
+            <div class="map-monsters" style="${isLocked?'color:#e74c3c':''}">${isLocked ? `需等級 ${m.minLvl}` : `Lv.${m.minLvl}+`}</div>
+        `;
+        div.onclick = () => { 
+            AudioEngine.sfx.click(); 
+            if(isLocked) { alert(`等級不足！需等級 ${m.minLvl}`); return; }
+            startBattleSequence(m.id); 
+        };
+        grid.appendChild(div);
+    });
 }
 
-function startBattleSequence() {
-    AudioEngine.sfx.click();
+function startBattleSequence(mapId) {
+    if(mapId) battle.mapId = mapId;
     AudioEngine.playBGM(true);
-    document.getElementById('battle-prep-screen').style.display = 'none';
+    document.getElementById('map-select-screen').style.display = 'none';
     document.getElementById('battle-active-screen').style.display = 'block';
     
-    const roll = Math.random() * 100; let target;
-    if (roll < 40) target = TIERS[0]; else if (roll < 70) target = TIERS[1]; else if (roll < 88) target = TIERS[2]; else if (roll < 98) target = TIERS[3]; else target = TIERS[4];
-    const isBoss = target.id === 'dragon' || Math.random() < 0.05;
+    const map = MAPS.find(m => m.id === battle.mapId);
+    const mKey = map.mons[Math.floor(Math.random()*map.mons.length)];
+    const mData = MONSTERS[mKey];
+    
+    // Boss Mutation: 5% Chance
+    const isBoss = Math.random() < 0.05;
+    const hpMult = isBoss ? 5 : 1; const atkMult = isBoss ? 1.5 : 1;
+    const bossDefMult = isBoss ? 1.5 : 1;
     
     battle = {
-        active: true, maxHp: target.hp * (isBoss?3:1), bossHp: target.hp * (isBoss?3:1), playerHp: getStats().hp, monster: target, isBoss: isBoss, shieldTurns: 0, currentQ: null, timerId: null, timeLeft: 30, lastDamage: 0,
+        active: true, mapId: battle.mapId, monster: mData, isBoss: isBoss,
+        maxHp: mData.hp * hpMult, bossHp: mData.hp * hpMult, playerHp: getStats().hp,
+        shieldTurns: 0, currentQ: null, timerId: null, timeLeft: 30, lastDamage: 0,
         stats: { turns: 0, correct: 0, maxCombo: 0, currCombo: 0, dmgTaken: 0, dmgDealt: 0 }
     };
     
-    document.getElementById('boss-sprite').innerText = target.i; document.getElementById('boss-sprite').style.transform = isBoss ? 'scale(1.5)' : 'scale(1)';
-    document.getElementById('enemy-name').innerText = (isBoss?"BOSS ":"") + target.n; document.getElementById('enemy-level').innerText = Math.max(1, Math.floor(player.level + (isBoss?2:0)));
+    let traitText = "";
+    if(mData.t==='T') traitText="🛡️ 堅硬 (高防禦)";
+    if(mData.t==='R') traitText="🌵 尖刺 (反彈傷害)";
+    if(mData.t==='H') traitText="❤️ 再生 (每回合回血)";
+    if(mData.t==='S') traitText="👻 虛無 (高閃避)";
+    if(mData.t==='G') traitText="⚔️ 狂暴 (高攻薄血)";
+    if(mData.t==='B') traitText="☠️ 傳說生物";
+    
+    if(isBoss) traitText = "👑 王者降臨！全能力大幅提升！";
+
+    document.getElementById('enemy-trait').innerText = traitText;
+    document.getElementById('boss-sprite').innerText = mData.i;
+    document.getElementById('boss-sprite').style.transform = isBoss ? 'scale(2.0)' : 'scale(1.5)';
+    document.getElementById('boss-sprite').style.filter = isBoss ? 'drop-shadow(0 0 10px red)' : 'none';
+    
+    document.getElementById('enemy-name').innerText = (isBoss ? "王者 " : "") + mData.n; 
+    document.getElementById('enemy-name').style.color = isBoss ? "#e74c3c" : "var(--primary)";
+    
+    document.getElementById('enemy-level').innerText = Math.max(1, map.minLvl + Math.floor(Math.random()*5));
     document.getElementById('battle-tools').style.display = 'flex';
+    
     updateBattleUI(); loadQuestion();
 }
 
@@ -700,21 +661,27 @@ function updateBattleUI() {
 function loadQuestion() {
     if(!battle.active) return;
     if(battle.timerId) clearInterval(battle.timerId);
-    battle.timeLeft = 30;
+    
+    const mapInfo = MAPS.find(m => m.id === battle.mapId);
+    // Harder monsters = less time. Min 10s.
+    let limit = 30 - Math.floor(mapInfo.minLvl / 5); 
+    if(limit < 10) limit = 10;
+    battle.timeLeft = limit;
+    
     document.getElementById('battle-timer-bar').style.width = '100%';
     document.getElementById('battle-timer-bar').style.background = '#00d2d3';
     
     battle.timerId = setInterval(() => {
         if(!battle.active) return;
         battle.timeLeft--;
-        const pct = (battle.timeLeft / 30) * 100;
+        const pct = (battle.timeLeft / limit) * 100;
         const bar = document.getElementById('battle-timer-bar');
         bar.style.width = `${pct}%`;
-        if(battle.timeLeft < 10) { bar.style.background = '#e74c3c'; AudioEngine.sfx.tick(); }
+        if(battle.timeLeft < 5) { bar.style.background = '#e74c3c'; AudioEngine.sfx.tick(); }
         
         if(battle.timeLeft <= 0) {
             clearInterval(battle.timerId);
-            handleAns(null, null, null);
+            handleAns(null, null, null); // Timeout
         }
     }, 1000);
 
@@ -735,28 +702,89 @@ function handleAns(btn, choice, ans) {
     
     battle.stats.turns++;
     battle.lastDamage = 0;
+    player.totalQ++;
 
     if(choice === ans) { 
         if(btn) btn.style.background = "#27ae60";
+        player.correctQ++;
         battle.stats.correct++; battle.stats.currCombo++;
-        if(battle.stats.currCombo > battle.stats.maxCombo) battle.stats.maxCombo = battle.stats.currCombo;
-        const isCrit = Math.random()*100 < getStats().crit;
-        const dmg = Math.floor(getStats().atk * (isCrit?1.5:1) * (1 + battle.stats.currCombo*0.1));
-        battle.bossHp -= dmg; battle.stats.dmgDealt += dmg;
+        if(battle.stats.currCombo > player.maxStreak) player.maxStreak = battle.stats.currCombo;
         
-        // Attack Animation
-        AudioEngine.sfx.attack();
-        triggerAnim('boss-sprite', 'anim-monster-hit');
-        showFloatText(isCrit?`爆擊 ${dmg}!`:`${dmg}`, "#f1c40f");
+        const stats = getStats();
+        const isCrit = Math.random()*100 < stats.crit;
+        let dmg = Math.floor(stats.atk * (isCrit?1.5:1) * (1 + battle.stats.currCombo*0.1));
+        
+        // Traits
+        if(battle.monster.t === 'T') dmg = Math.floor(dmg * 0.7); 
+        if(battle.isBoss) dmg = Math.floor(dmg * 0.8); // Boss defense
+
+        if(battle.monster.t === 'S' && Math.random() < 0.3) { 
+            dmg = 0; showFloatText("MISS (虛無)!", "#aaa"); 
+        } else if (battle.isBoss && Math.random() < 0.2) { // Boss dodge
+            dmg = 0; showFloatText("BOSS 閃避!", "#e74c3c");
+        } else {
+            battle.bossHp -= dmg; battle.stats.dmgDealt += dmg;
+            AudioEngine.sfx.attack();
+            document.getElementById('boss-sprite').className = 'anim-monster-hit';
+            setTimeout(()=>document.getElementById('boss-sprite').className='', 400);
+            showFloatText(isCrit?`爆擊 ${dmg}!`:`${dmg}`, "#f1c40f");
+            
+            if(battle.monster.t === 'R') {
+                const ref = Math.floor(dmg * 0.2);
+                if(ref > 0) { playerHpChange(-ref); showFloatText(`反傷 -${ref}`, "#e74c3c"); }
+            }
+        }
     } else { 
         if(btn) btn.style.background = "#c0392b";
         battle.stats.currCombo = 0;
         AudioEngine.sfx.wrong();
-        showFloatText("失誤", "#aaa");
+        if(choice === null) showFloatText("時間到!", "#e74c3c");
+        else showFloatText("失誤", "#aaa");
         monsterAttack();
     }
-    updateBattleUI();
+    
+    if(battle.monster.t === 'H' && battle.bossHp > 0) {
+        const heal = Math.floor(battle.maxHp * 0.05);
+        battle.bossHp = Math.min(battle.maxHp, battle.bossHp + heal);
+        showFloatText(`再生 +${heal}`, "#2ecc71");
+    }
+
+    updateBattleUI(); saveData(); 
     document.getElementById('post-answer-actions').style.display = 'flex';
+}
+
+function monsterAttack() {
+    if(battle.shieldTurns > 0) { battle.shieldTurns--; showFloatText("格擋!", "#3498db"); return; }
+    if(Math.random()*100 < getStats().dodge) { showFloatText("閃避!", "#9b59b6"); return; }
+    
+    // Atk Calculation
+    let mAtk = battle.monster.atk + (MAPS.find(m=>m.id===battle.mapId).minLvl * 2);
+    if(battle.isBoss) mAtk *= 1.5; // Boss hits harder
+
+    let dmg = Math.floor(mAtk - (getStats().def * 0.3));
+    dmg = Math.max(1, dmg);
+
+    // Boss Ultimate Check (30%)
+    if(battle.isBoss && Math.random() < 0.3) {
+        dmg = Math.floor(dmg * 2.5);
+        AudioEngine.sfx.ult();
+        document.getElementById('boss-sprite').className = 'anim-boss-ult';
+        setTimeout(()=>document.getElementById('boss-sprite').className='', 800);
+        showFloatText("BOSS 必殺技!!", "#e74c3c");
+    }
+
+    playerHpChange(-dmg);
+    battle.stats.dmgTaken += dmg; battle.lastDamage = dmg; 
+    
+    AudioEngine.sfx.hit();
+    document.querySelector('.app-container').className = 'app-container anim-player-hit';
+    setTimeout(()=>document.querySelector('.app-container').className='app-container', 500);
+    showFloatText(`-${dmg}`, "#e74c3c");
+}
+
+function playerHpChange(val) {
+    const max = getStats().hp;
+    battle.playerHp = Math.min(max, battle.playerHp + val);
 }
 
 function nextTurn() {
@@ -766,121 +794,113 @@ function nextTurn() {
     else loadQuestion();
 }
 
-function openDictionary() {
-    AudioEngine.sfx.click();
-    if(!battle.currentQ) return;
-    const q = battle.currentQ;
-    let term = (q.type === '1') ? q.a : q.q.replace(/[「」『』]/g, ''); 
-    window.open(`https://dict.revised.moe.edu.tw/search.jsp?md=1&word=${encodeURIComponent(term)}`, '_blank');
-}
-
-function monsterAttack() {
-    if(battle.shieldTurns > 0) { battle.shieldTurns--; showFloatText("格擋!", "#3498db"); return; }
-    if(Math.random()*100 < getStats().dodge) { showFloatText("閃避!", "#9b59b6"); return; }
-    
-    // Damage Calc: Monster ATK + Scaling - Defense
-    const mAtk = battle.monster.atk || 5; 
-    const difficultyScaling = player.level * 2; 
-    let dmg = Math.floor((mAtk + difficultyScaling) - (getStats().def * 0.3));
-    dmg = Math.max(1, dmg);
-
-    battle.playerHp -= dmg; battle.stats.dmgTaken += dmg;
-    battle.lastDamage = dmg; 
-    
-    // Player Hit Animation
-    AudioEngine.sfx.hit();
-    triggerAnim('app-ui', 'anim-player-hit');
-    showFloatText(`-${dmg}`, "#e74c3c");
-}
-
-function usePotion() {
-    if(player.potions > 0 && battle.active) {
-        player.potions--; const heal = Math.floor(getStats().hp * 0.5);
-        battle.playerHp = Math.min(battle.playerHp + heal, getStats().hp);
-        AudioEngine.sfx.coin(); 
-        updateBattleUI(); showFloatText(`恢復 ${heal}`, "#2ecc71");
-    }
-}
-function useShield() {
-    if(player.shields > 0 && battle.active) {
-        player.shields--; battle.shieldTurns = 2;
-        AudioEngine.sfx.equip();
-        updateBattleUI(); showFloatText("護盾開啟", "#3498db");
-    }
-}
-function fleeBattle() {
-    if(confirm('確定要逃跑嗎？')) {
-        battle.active = false; AudioEngine.playBGM(false);
-        document.getElementById('battle-active-screen').style.display = 'none';
-        document.getElementById('battle-prep-screen').style.display = 'block';
-    }
-}
-
 function winBattle() {
     battle.active = false; AudioEngine.sfx.victoryTheme();
-    const m = battle.monster; let xpGain = m.xp * (battle.isBoss?5:1); let gemGain = Math.floor(xpGain/2); let gotPotion = Math.random() > 0.8;
+    const m = battle.monster; 
+    let xpGain = m.xp * (battle.isBoss?5:1); 
+    let gemGain = Math.floor(xpGain/2); 
+    let gotPotion = Math.random() > 0.8;
+    
     addXp(xpGain); player.gems += gemGain; if(gotPotion) player.potions++;
-    const s = battle.stats; const accuracy = Math.round((s.correct / s.turns) * 100) || 0;
+    const s = battle.stats; const acc = Math.round((s.correct / s.turns) * 100) || 0;
     
     const modalBox = document.querySelector('#battle-result-modal .modal-box');
-    modalBox.innerHTML = `<div style="font-size:4rem; margin-bottom:5px;">🏆</div><h2 style="font-family:var(--font-title); color:#f1c40f; margin:0 0 10px 0;">戰鬥勝利</h2><div class="result-stat-grid"><div class="res-row"><span>⚔️ 回合數</span><span class="res-val" style="color:#ddd">${s.turns}</span></div><div class="res-row"><span>🔥 總傷害</span><span class="res-val" style="color:#e74c3c">${s.dmgDealt}</span></div><div class="res-row"><span>🎯 準確率</span><span class="res-val" style="color:#3498db">${accuracy}%</span></div><div class="res-row"><span>🎁 寶石</span><span class="res-val" style="color:#2ecc71">+${gemGain}</span></div></div><button class="start-btn" onclick="showLootMenu(${xpGain}, ${gemGain}, ${gotPotion})">確認</button>`;
+    modalBox.innerHTML = `<div style="font-size:4rem; margin-bottom:5px;">🏆</div><h2 style="font-family:var(--font-title); color:#f1c40f; margin:0 0 10px 0;">戰鬥勝利</h2><div class="result-stat-grid"><div class="res-row"><span>⚔️ 回合數</span><span class="res-val" style="color:#ddd">${s.turns}</span></div><div class="res-row"><span>🔥 總傷害</span><span class="res-val" style="color:#e74c3c">${s.dmgDealt}</span></div><div class="res-row"><span>🎯 準確率</span><span class="res-val" style="color:#3498db">${acc}%</span></div><div class="res-row"><span>🎁 寶石</span><span class="res-val" style="color:#2ecc71">+${gemGain}</span></div></div><button class="start-btn" onclick="showLootMenu(${xpGain}, ${gemGain}, ${gotPotion})">確認</button>`;
     document.getElementById('battle-result-modal').style.display = 'flex'; saveData();
 }
 
 function showLootMenu(xp, gems, potion) {
-    AudioEngine.sfx.confirm();
+    AudioEngine.sfx.confirm(); updateUI(); 
     const modalBox = document.querySelector('#battle-result-modal .modal-box');
     let potionHtml = potion ? '<div style="color:#2ecc71">🧪 獲得藥水 x1</div>' : '';
     modalBox.innerHTML = `<div style="font-size:4rem; margin-bottom:10px;">🎒</div><h2 style="font-family:var(--font-title); color:#fff; margin:0 0 15px 0;">戰利品</h2><div style="font-size:1.2rem; color:#fff; font-weight:bold; margin-bottom:20px; padding:15px; background:rgba(255,255,255,0.05); border-radius:8px;">經驗 +${xp}<br>寶石 +${gems}${potionHtml}</div><div style="display:flex; flex-direction:column; gap:10px;"><button class="start-btn" onclick="continueBattle()">⚔️ 繼續狩獵</button><button class="start-btn btn-secondary" onclick="exitBattle()">🏠 返回營地</button></div>`;
 }
 
 function continueBattle() { AudioEngine.sfx.click(); document.getElementById('battle-result-modal').style.display = 'none'; startBattleSequence(); }
-function exitBattle() { AudioEngine.sfx.click(); AudioEngine.playBGM(false); document.getElementById('battle-result-modal').style.display = 'none'; document.getElementById('battle-active-screen').style.display = 'none'; document.getElementById('battle-prep-screen').style.display = 'block'; }
-function loseBattle() { battle.active = false; alert("你被擊敗了..."); AudioEngine.playBGM(false); document.getElementById('battle-active-screen').style.display = 'none'; document.getElementById('battle-prep-screen').style.display = 'block'; }
+function exitBattle() { AudioEngine.sfx.click(); AudioEngine.playBGM(false); document.getElementById('battle-result-modal').style.display = 'none'; document.getElementById('battle-active-screen').style.display = 'none'; renderMaps(); document.getElementById('map-select-screen').style.display = 'block'; }
+function loseBattle() { battle.active = false; alert("你被擊敗了..."); AudioEngine.playBGM(false); document.getElementById('battle-active-screen').style.display = 'none'; renderMaps(); document.getElementById('map-select-screen').style.display = 'block'; }
 
-function pullGacha() {
-    AudioEngine.sfx.click();
-    let cost = 100; let useTicket = player.gachaTickets > 0;
-    if (!useTicket && player.gems < cost) return alert("寶石不足!");
-    if (useTicket) player.gachaTickets--; else player.gems -= cost;
+// --- Enhance System ---
+function openEnhance(idx) {
+    AudioEngine.sfx.click(); enhanceTargetIdx = idx;
+    const item = player.inventory[idx]; const currentLvl = item.level || 0;
+    if(currentLvl >= 15) { alert("此裝備已達最高強化等級！"); return; }
     
-    AudioEngine.sfx.gacha(); 
+    const cost = (currentLvl + 1) * 10;
+    const rate = Math.max(25, 100 - (currentLvl * 5));
     
-    const parts = ['head','body','legs','feet','gloves','weapon','offhand','accessory'];
-    const part = parts[Math.floor(Math.random()*parts.length)];
-    const rarity = Math.random() < (0.1 + getStats().luck*0.01) ? 3 : (Math.random()<0.3 ? 2 : 1);
-    const partNames = {head:'頭盔', body:'鎧甲', legs:'護腿', feet:'戰靴', gloves:'護手', weapon:'武器', offhand:'盾牌', accessory:'飾品'};
-    const rarityNames = ['普通', '稀有', '傳說'];
-    
-    // Level scaling for Gacha
-    const lvlMult = 1 + (player.level * 0.1); 
+    const modal = document.getElementById('enhance-modal');
+    document.getElementById('enhance-info').innerHTML = `
+        <div style="text-align:center; margin-bottom:10px; font-size:1.2rem; font-weight:bold; color:var(--enhance);">${item.name} +${currentLvl} ➤ +${currentLvl+1}</div>
+        <div>💎 費用：${cost}</div>
+        <div>🎲 成功率：${rate}%</div>
+        <div style="font-size:0.8rem; color:#aaa; margin-top:5px;">每 +5 等級將隨機賦予新屬性！<br>失敗不會消失，僅損失寶石。</div>
+    `;
+    modal.style.display = 'flex';
+}
+function closeEnhanceModal() { document.getElementById('enhance-modal').style.display = 'none'; enhanceTargetIdx = -1; }
 
-    const item = {
-        name: `${rarityNames[rarity-1]} ${partNames[part]}`, slot: part, rarity: rarity,
-        icon: {head:'⛑️',body:'👕',legs:'👖',feet:'👢',gloves:'🧤',weapon:'⚔️',offhand:'🛡️',accessory:'💍'}[part],
-        atk: Math.floor((part==='weapon' ? rarity*5 : 0) * lvlMult), 
-        def: Math.floor((part!=='weapon' && part!=='accessory' ? rarity*3 : 0) * lvlMult),
-        hp: Math.floor((part==='body' ? rarity*20 : 0) * lvlMult), 
-        luck: Math.floor((part==='accessory' ? rarity*2 : 0) * lvlMult), 
-        crit: Math.floor((part==='weapon' ? rarity : 0) * lvlMult)
-    };
+function doEnhance() {
+    if(enhanceTargetIdx === -1) return;
+    const item = player.inventory[enhanceTargetIdx]; const currentLvl = item.level || 0;
+    const cost = (currentLvl + 1) * 10;
+    const rate = Math.max(25, 100 - (currentLvl * 5));
+
+    if(player.gems < cost) { alert("寶石不足！"); return; }
+    player.gems -= cost; updateUI(); 
+
+    if(Math.random() * 100 < rate) {
+        AudioEngine.sfx.enhance();
+        item.level = currentLvl + 1;
+        if(item.level % 5 === 0) {
+            if(!item.bonus) item.bonus = {};
+            const types = ['atk','def','hp','crit','dodge','luck'];
+            const type = types[Math.floor(Math.random()*types.length)];
+            const val = Math.floor(Math.random()*5) + 3;
+            item.bonus[type] = (item.bonus[type] || 0) + val;
+            alert(`強化成功！(+${item.level})\n獲得額外屬性：${type.toUpperCase()} +${val}`);
+        } else {
+            alert(`強化成功！ (+${item.level})`);
+        }
+        saveData(); updateUI(); closeEnhanceModal();
+    } else {
+        AudioEngine.sfx.enhanceFail();
+        alert("強化失敗...");
+        saveData(); updateUI();
+    }
+}
+
+// --- Utils & Fixes ---
+function addXp(amount) { player.xp += amount; const req = player.level * 100; if (player.xp >= req) { player.xp -= req; player.level++; AudioEngine.sfx.win(); showFloatText("等級提升!", "#f1c40f"); } updateUI(); saveData(); }
+function fixError() {
+    AudioEngine.sfx.click(); if(!battle.currentQ) return;
+    const qKey = battle.currentQ.q; const newAns = prompt(`題目：「${qKey}」\n目前答案：「${battle.currentQ.a}」\n請輸入正確答案：`);
+    if(newAns && newAns.trim() !== "") {
+        customCorrections[qKey] = newAns.trim(); saveCorrections(); battle.currentQ.a = newAns.trim();
+        if(battle.lastDamage > 0) { playerHpChange(battle.lastDamage); battle.stats.dmgTaken -= battle.lastDamage; battle.lastDamage = 0; updateBattleUI(); alert("已修正並補回血量！"); }
+        else alert("已修正資料庫！");
+    }
+}
+function openDictionary() { AudioEngine.sfx.click(); if(!battle.currentQ) return; const q = battle.currentQ; let term = (q.type === '1') ? q.a : q.q.replace(/[「」『』]/g, ''); window.open(`https://dict.revised.moe.edu.tw/search.jsp?md=1&word=${encodeURIComponent(term)}`, '_blank'); }
+function usePotion() { if(player.potions>0 && battle.active) { player.potions--; playerHpChange(Math.floor(getStats().hp*0.5)); AudioEngine.sfx.coin(); updateBattleUI(); showFloatText("恢復", "#2ecc71"); } }
+function useShield() { if(player.shields>0 && battle.active) { player.shields--; battle.shieldTurns=2; AudioEngine.sfx.enhance(); updateBattleUI(); showFloatText("護盾", "#3498db"); } }
+function fleeBattle() { if(confirm('逃跑?')) { battle.active=false; AudioEngine.playBGM(false); document.getElementById('battle-active-screen').style.display='none'; document.getElementById('map-select-screen').style.display='block'; } }
+function equipItem(idx) { AudioEngine.sfx.enhance(); const item=player.inventory[idx]; if(player.equipped[item.slot]) player.inventory.push(player.equipped[item.slot]); player.equipped[item.slot]=item; player.inventory.splice(idx,1); saveData(); updateUI(); }
+function unequip(slot) { if(player.equipped[slot]) { AudioEngine.sfx.enhance(); player.inventory.push(player.equipped[slot]); delete player.equipped[slot]; saveData(); updateUI(); } }
+function sellItem(idx) { AudioEngine.sfx.click(); if(confirm('確定出售?')) { AudioEngine.sfx.coin(); player.gems += player.inventory[idx].rarity*20; player.inventory.splice(idx,1); saveData(); updateUI(); } }
+function pullGacha() { 
+    AudioEngine.sfx.click(); let cost=100; let useTicket=player.gachaTickets>0; if(!useTicket && player.gems<cost) return alert("寶石不足!");
+    if(useTicket) player.gachaTickets--; else player.gems-=cost; AudioEngine.sfx.gacha();
+    const parts=['head','body','legs','feet','gloves','weapon','offhand','accessory']; const part=parts[Math.floor(Math.random()*parts.length)];
+    const rarity=Math.random()<(0.1+getStats().luck*0.01)?3:(Math.random()<0.3?2:1);
+    const lvlMult=1+(player.level*0.1); 
+    const item={ name:`${['普通','稀有','傳說'][rarity-1]} ${{head:'頭盔',body:'鎧甲',legs:'護腿',feet:'戰靴',gloves:'護手',weapon:'武器',offhand:'盾牌',accessory:'飾品'}[part]}`, slot:part, rarity:rarity, icon:{head:'⛑️',body:'👕',legs:'👖',feet:'👢',gloves:'🧤',weapon:'⚔️',offhand:'🛡️',accessory:'💍'}[part], level:0, atk:Math.floor((part==='weapon'?rarity*5:0)*lvlMult), def:Math.floor((part!=='weapon'&&part!=='accessory'?rarity*3:0)*lvlMult), hp:Math.floor((part==='body'?rarity*20:0)*lvlMult), luck:Math.floor((part==='accessory'?rarity*2:0)*lvlMult), crit:Math.floor((part==='weapon'?rarity:0)*lvlMult) };
     player.inventory.push(item); saveData(); updateUI();
-    const costMsg = useTicket ? "消耗抽獎券 x1" : "消耗 100 寶石";
-    setTimeout(() => alert(`[${costMsg}]\n獲得：${item.name}\n${getItemDesc(item)}`), 500); 
+    setTimeout(()=>alert(`獲得：${item.name}`), 500);
 }
-
-function equipItem(idx) { AudioEngine.sfx.equip(); const item = player.inventory[idx]; if(player.equipped[item.slot]) player.inventory.push(player.equipped[item.slot]); player.equipped[item.slot] = item; player.inventory.splice(idx, 1); saveData(); updateUI(); }
-function unequip(slot) { if(player.equipped[slot]) { AudioEngine.sfx.equip(); player.inventory.push(player.equipped[slot]); delete player.equipped[slot]; saveData(); updateUI(); } }
-function sellItem(idx) { 
-    AudioEngine.sfx.click();
-    const item = player.inventory[idx]; const price = item.rarity * 20; 
-    if (confirm(`確定要出售「${item.name}」嗎？\n預估售價：${price} 💎`)) { AudioEngine.sfx.coin(); player.gems += price; player.inventory.splice(idx, 1); saveData(); updateUI(); } 
-}
-
-function switchTab(t) { AudioEngine.sfx.click(); document.querySelectorAll('.tab-page').forEach(e => e.classList.remove('active')); document.getElementById(`tab-${t}`).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active')); event.currentTarget.classList.add('active'); }
-function renderMonsterRates() { document.getElementById('monster-rates-list').innerHTML = TIERS.map(m => `<tr><td>${m.i} ${m.n}</td><td>Lv.${m.minLvl}+</td><td>${m.chance}%</td></tr>`).join(''); }
-function toggleMute() { AudioEngine.isMuted = !AudioEngine.isMuted; if(AudioEngine.isMuted) AudioEngine.stopBGM(); else AudioEngine.playBGM(battle.active); document.getElementById('sound-btn').innerText = AudioEngine.isMuted ? '🔇' : '🔊'; }
-function showFloatText(txt, color) { const el = document.createElement('div'); el.className = 'float-txt'; el.style.color = color; el.innerText = txt; document.body.appendChild(el); setTimeout(()=>el.remove(), 1000); }
+function switchTab(t) { AudioEngine.sfx.click(); document.querySelectorAll('.tab-page').forEach(e=>e.classList.remove('active')); document.getElementById(`tab-${t}`).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active')); event.currentTarget.classList.add('active'); }
+function toggleMute() { AudioEngine.isMuted=!AudioEngine.isMuted; if(AudioEngine.isMuted) AudioEngine.stopBGM(); else AudioEngine.playBGM(battle.active); document.getElementById('sound-btn').innerText=AudioEngine.isMuted?'🔇':'🔊'; }
+function showFloatText(txt,c) { const el=document.createElement('div'); el.className='float-txt'; el.style.color=c; el.innerText=txt; document.body.appendChild(el); setTimeout(()=>el.remove(),1000); }
 </script>
 </body>
 </html>
