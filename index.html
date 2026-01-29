@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>字靈獵人：百層塔傳說 (V49)</title>
+    <title>字靈獵人：百層塔傳說 (V50)</title>
     <script src="moe_data.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&display=swap');
@@ -254,7 +254,7 @@
 
         <div id="battle-active-screen" style="display:none;">
             <div style="text-align:center; margin-top:5px;">
-                <div style="font-size:6rem; filter:drop-shadow(0 0 30px #e74c3c); transition:0.2s;" id="boss-sprite">👹</div>
+                <div style="font-size:3rem; filter:drop-shadow(0 0 30px #e74c3c); transition:0.2s;" id="boss-sprite">👹</div>
                 <div style="color:var(--primary); font-size:1.4rem; font-weight:bold;">
                     <span id="enemy-name">DEMON</span> <span style="font-size:1rem; color:#aaa;">Lv.<span id="enemy-level">1</span></span>
                 </div>
@@ -452,16 +452,16 @@ const MONSTERS = {
 // 11 Maps (Every 10 levels)
 const MAPS = [
     { id:'m1', n:'新手村 (Lv.1)', minLvl:1, icon:'🛖', mons:['m01','m02','m03'] },
-    { id:'m2', n:'迷霧森林 (Lv.10)', minLvl:10, icon:'🌲', mons:['m04','m05','m06'] },
-    { id:'m3', n:'荒涼墓園 (Lv.20)', minLvl:20, icon:'🪦', mons:['m07','m08','m09'] },
-    { id:'m4', n:'岩石峽谷 (Lv.30)', minLvl:30, icon:'⛰️', mons:['m10','m11','m12'] },
-    { id:'m5', n:'吸血古堡 (Lv.40)', minLvl:40, icon:'🏰', mons:['m13','m14','m15'] },
-    { id:'m6', n:'劇毒沼澤 (Lv.50)', minLvl:50, icon:'🐊', mons:['m16','m17','m18'] },
-    { id:'m7', n:'極寒冰原 (Lv.60)', minLvl:60, icon:'❄️', mons:['m19','m20','m21'] },
-    { id:'m8', n:'黃沙遺跡 (Lv.70)', minLvl:70, icon:'🕌', mons:['m22','m23','m24'] },
-    { id:'m9', n:'燃燒地獄 (Lv.80)', minLvl:80, icon:'🔥', mons:['m25','m26','m27'] },
-    { id:'m10', n:'巨龍巢穴 (Lv.90)', minLvl:90, icon:'🌋', mons:['m28','m29','m30'] },
-    { id:'m11', n:'虛空之門 (Lv.100)', minLvl:100, icon:'🌌', mons:['m30','m28','m31'] }
+    { id:'m2', n:'迷霧森林 (Lv.5)', minLvl:5, icon:'🌲', mons:['m04','m05','m06'] },
+    { id:'m3', n:'荒涼墓園 (Lv.15)', minLvl:5, icon:'🪦', mons:['m07','m08','m09'] },
+    { id:'m4', n:'岩石峽谷 (Lv.25)', minLvl:25, icon:'⛰️', mons:['m10','m11','m12'] },
+    { id:'m5', n:'吸血古堡 (Lv.35)', minLvl:35, icon:'🏰', mons:['m13','m14','m15'] },
+    { id:'m6', n:'劇毒沼澤 (Lv.45)', minLvl:45, icon:'🐊', mons:['m16','m17','m18'] },
+    { id:'m7', n:'極寒冰原 (Lv.55)', minLvl:55, icon:'❄️', mons:['m19','m20','m21'] },
+    { id:'m8', n:'黃沙遺跡 (Lv.65)', minLvl:65, icon:'🕌', mons:['m22','m23','m24'] },
+    { id:'m9', n:'燃燒地獄 (Lv.75)', minLvl:75, icon:'🔥', mons:['m25','m26','m27'] },
+    { id:'m10', n:'巨龍巢穴 (Lv.85)', minLvl:85, icon:'🌋', mons:['m28','m29','m30'] },
+    { id:'m11', n:'虛空之門 (Lv.95)', minLvl:95, icon:'🌌', mons:['m30','m28','m31'] }
 ];
 
 const DAILY_REWARDS = [ {t:'gems',v:30,i:'💎',n:'寶石'}, {t:'xp',v:50,i:'✨',n:'經驗'}, {t:'potion',v:2,i:'🧪',n:'藥水'}, {t:'gems',v:50,i:'💎',n:'寶石'}, {t:'xp',v:100,i:'✨',n:'經驗'}, {t:'shield',v:2,i:'🛡️',n:'護盾'}, {t:'ticket',v:1,i:'🎫',n:'免費抽'} ];
