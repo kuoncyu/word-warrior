@@ -559,6 +559,7 @@ function updateUI() {
     document.getElementById('stat-crit').innerText = s.crit + "%"; document.getElementById('stat-dodge').innerText = s.dodge + "%"; document.getElementById('stat-luck').innerText = s.luck + "%";
     document.getElementById('stat-acc').innerText = acc + "%"; document.getElementById('stat-total-q').innerText = player.totalQ; document.getElementById('stat-max-streak').innerText = player.maxStreak || 0;
     document.getElementById('gacha-gems-display').innerText = player.gems;
+    document.getElementById('gacha-luck-val').innerText = getStats().luck;
 
     const names = {head:'頭盔',body:'鎧甲',legs:'護腿',feet:'戰靴',gloves:'護手',weapon:'武器',offhand:'盾牌',accessory:'飾品'};
     ['head','body','legs','feet','gloves','weapon','offhand','accessory'].forEach(slot => {
@@ -900,6 +901,7 @@ function showFloatText(txt,c) { const el=document.createElement('div'); el.class
 </script>
 </body>
 </html>
+
 
 
 
