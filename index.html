@@ -243,7 +243,7 @@
             <div class="equip-slot" id="slot-offhand" onclick="unequip('offhand')"><div class="slot-icon">🛡️</div><div class="slot-name">防具</div></div>
         </div>
 
-        <div id="inventory-list" style="padding-bottom:20px;"></div>
+        <div id="inventory-list" style="padding-bottom:60px;"></div>
     </div>
 
     <div id="tab-battle" class="content tab-page">
@@ -254,7 +254,7 @@
 
         <div id="battle-active-screen" style="display:none;">
             <div style="text-align:center; margin-top:5px;">
-                <div style="font-size:6rem; filter:drop-shadow(0 0 30px #e74c3c); transition:0.2s;" id="boss-sprite">👹</div>
+                <div style="font-size:3rem; filter:drop-shadow(0 0 30px #e74c3c); transition:0.2s;" id="boss-sprite">👹</div>
                 <div style="color:var(--primary); font-size:1.4rem; font-weight:bold;">
                     <span id="enemy-name">DEMON</span> <span style="font-size:1rem; color:#aaa;">Lv.<span id="enemy-level">1</span></span>
                 </div>
@@ -559,6 +559,7 @@ function updateUI() {
     document.getElementById('stat-crit').innerText = s.crit + "%"; document.getElementById('stat-dodge').innerText = s.dodge + "%"; document.getElementById('stat-luck').innerText = s.luck + "%";
     document.getElementById('stat-acc').innerText = acc + "%"; document.getElementById('stat-total-q').innerText = player.totalQ; document.getElementById('stat-max-streak').innerText = player.maxStreak || 0;
     document.getElementById('gacha-gems-display').innerText = player.gems;
+    document.getElementById('gacha-luck-val').innerText = getStats().luck;
 
     const names = {head:'頭盔',body:'鎧甲',legs:'護腿',feet:'戰靴',gloves:'護手',weapon:'武器',offhand:'盾牌',accessory:'飾品'};
     ['head','body','legs','feet','gloves','weapon','offhand','accessory'].forEach(slot => {
@@ -900,3 +901,4 @@ function showFloatText(txt,c) { const el=document.createElement('div'); el.class
 </script>
 </body>
 </html>
+
