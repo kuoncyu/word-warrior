@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>字靈獵人：百層塔傳說 (V50 - 裝備革新版)</title>
+    <title>字靈獵人：百層塔傳說 (V50 強化版)</title>
     <script src="moe_data.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&display=swap');
@@ -18,873 +18,1095 @@
             --boss: #e74c3c;
             --text: #f5f6fa;
             --font-main: 'Noto Serif TC', serif;
-            --common: #dcdde1;
-            --rare: #00a8ff;
-            --legendary: #e1b12c;
+            --common: #b2bec3;
+            --rare: #74b9ff;
+            --legend: #ffeaa7;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 
         body {
             font-family: var(--font-main); background-color: var(--bg-dark); color: var(--text);
-            margin: 0; padding: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+            margin: 0; display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+            background: radial-gradient(circle at 50% 30%, #1e0505 0%, #000 100%);
         }
 
-        /* 頂部資訊列 */
-        .top-bar {
-            padding: 10px 15px; background: rgba(0,0,0,0.8); border-bottom: 2px solid var(--primary);
-            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        /* --- Animations --- */
+        @keyframes monster-hit {
+            0% { transform: scale(1) translate(0,0); filter: brightness(1); }
+            20% { transform: scale(0.9) translate(-5px, 0); filter: brightness(2) drop-shadow(0 0 10px #fff); }
+            40% { transform: scale(1) translate(5px, 0); filter: brightness(1); }
+            100% { transform: scale(1) translate(0,0); }
         }
-        .res-box { display: flex; gap: 15px; font-size: 0.9rem; }
-        .res-item { display: flex; align-items: center; gap: 5px; }
+        @keyframes screen-shake-red {
+            0%, 100% { transform: translate(0,0); box-shadow: inset 0 0 0 transparent; }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-5px, -5px); box-shadow: inset 0 0 50px rgba(255,0,0,0.6); }
+            20%, 40%, 60%, 80% { transform: translate(5px, 5px); }
+        }
+        @keyframes boss-ult {
+            0% { transform: scale(1.5); filter: hue-rotate(0deg); }
+            50% { transform: scale(1.8); filter: hue-rotate(90deg) brightness(2); }
+            100% { transform: scale(1.5); filter: hue-rotate(0deg); }
+        }
 
-        /* 主內容區 */
-        .main-container { flex: 1; position: relative; overflow: hidden; }
-        .tab-page {
-            display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0;
-            padding: 15px; overflow-y: auto; flex-direction: column; align-items: center;
-        }
-        .tab-page.active { display: flex; animation: fadeIn 0.3s; }
+        .anim-monster-hit { animation: monster-hit 0.4s ease-out; }
+        .anim-player-hit { animation: screen-shake-red 0.5s ease-out; border: 2px solid red !important; }
+        .anim-boss-ult { animation: boss-ult 0.8s ease-in-out; }
 
-        /* 底部導航 */
-        .nav-bar {
-            height: 60px; background: #1e1e24; display: flex; justify-content: space-around;
-            align-items: center; border-top: 1px solid #333; z-index: 20;
+        .embers {
+            position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: -1;
+            background-image: radial-gradient(rgba(194, 54, 22, 0.3) 1px, transparent 1px);
+            background-size: 50px 50px; animation: rise 25s linear infinite; opacity: 0.5;
         }
-        .nav-btn {
-            background: none; border: none; color: #7f8c8d; font-size: 1.5rem;
-            padding: 10px; transition: 0.2s; cursor: pointer;
-        }
-        .nav-btn.active { color: var(--accent); transform: scale(1.1); text-shadow: 0 0 10px rgba(251, 197, 49, 0.5); }
+        @keyframes rise { from {transform: translateY(0);} to {transform: translateY(-600px);} }
 
-        /* 通用按鈕 */
-        .btn {
-            background: linear-gradient(135deg, #353b48, #2f3640); color: white; border: 1px solid #555;
-            padding: 8px 16px; border-radius: 4px; font-family: var(--font-main); cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        .app-container {
+            width: 100%; max-width: 550px; height: 100%; max-height: 950px;
+            background: var(--panel-bg); border: 2px solid #571a1a;
+            box-shadow: 0 0 80px rgba(194, 54, 22, 0.3); position: relative;
+            display: flex; flex-direction: column; overflow: hidden;
+            transition: border 0.2s;
         }
-        .btn:active { transform: scale(0.96); }
-        .btn-primary { background: var(--primary); border-color: #e84118; }
-        .btn-accent { background: var(--accent); color: #2f3640; font-weight: bold; border-color: #e1b12c; }
+        @media (min-width: 550px) { .app-container { border-radius: 12px; height: 95vh; } }
 
-        /* 戰鬥區 */
-        .battle-area { width: 100%; max-width: 600px; text-align: center; margin-top: 20px; }
-        .enemy-box { margin-bottom: 20px; position: relative; height: 150px; display: flex; justify-content: center; align-items: center; }
-        .enemy-sprite { font-size: 5rem; filter: drop-shadow(0 0 10px red); animation: float 3s infinite ease-in-out; }
-        .hp-bar-bg { width: 80%; height: 10px; background: #333; margin: 10px auto; border-radius: 5px; overflow: hidden; }
-        .hp-bar-fill { height: 100%; background: #e74c3c; width: 100%; transition: width 0.2s; }
+        /* UI Components */
+        .top-header { background: rgba(0,0,0,0.9); border-bottom: 1px solid #444; display: flex; flex-direction: column; }
+        .top-bar { padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .nav-bar { display: flex; height: 50px; }
+        .nav-btn { flex: 1; background: none; border: none; color: #555; font-size: 0.9rem; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
+        .nav-btn.active { color: var(--text); border-bottom-color: var(--primary); background: rgba(255,255,255,0.05); }
         
-        .quiz-box { 
-            background: rgba(0,0,0,0.6); padding: 20px; border-radius: 10px; border: 1px solid #444; width: 90%; max-width: 500px;
-        }
-        .quiz-question { font-size: 1.5rem; margin-bottom: 15px; color: var(--accent); font-weight: bold; }
-        .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .option-btn { padding: 15px; font-size: 1.1rem; }
+        .gems { color: var(--accent); font-size: 1.1rem; display: flex; align-items: center; gap: 5px; font-weight: bold; }
+        
+        .content { flex: 1; overflow-y: auto; padding: 15px; position: relative; scroll-behavior: smooth; }
+        .tab-page { display: none; animation: fadeIn 0.4s; }
+        .tab-page.active { display: block; }
+        @keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
 
-        /* 裝備與背包 */
-        .inventory-grid { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); 
-            gap: 10px; width: 100%; max-width: 600px; padding-bottom: 80px;
+        .start-btn {
+            background: linear-gradient(135deg, #c23616, #8e44ad);
+            color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 12px 25px;
+            font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+            letter-spacing: 1px; width: 100%;
+            box-shadow: 0 0 15px rgba(194, 54, 22, 0.5); border-radius: 4px; margin-bottom: 8px;
         }
-        .item-card {
-            background: #2f3640; border: 2px solid #444; border-radius: 5px; padding: 5px;
-            display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative;
-        }
-        .item-card.equipped { border-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
-        .item-icon { font-size: 2rem; margin-bottom: 5px; }
-        .item-info { text-align: center; font-size: 0.8rem; }
-        .item-lvl { position: absolute; top: 2px; left: 2px; font-size: 0.7rem; background: #000; padding: 1px 3px; border-radius: 3px; }
-        .item-enhance { position: absolute; top: 2px; right: 2px; font-size: 0.7rem; color: var(--enhance); font-weight: bold; }
+        .start-btn:active { transform: scale(0.96); filter: brightness(0.8); }
+        .btn-secondary { background: #34495e; box-shadow: none; border-color: #57606f; }
+        .btn-dict { background: #27ae60; border-color: #2ecc71; font-size: 0.9rem; }
+        .btn-fix { background: #d35400; border-color: #e67e22; font-size: 0.8rem; padding: 5px; width: auto; display: inline-block; margin-top: 5px;}
 
-        /* 稀有度顏色 */
-        .rarity-1 { border-color: var(--common); color: var(--common); }
-        .rarity-2 { border-color: var(--rare); color: var(--rare); }
-        .rarity-3 { border-color: var(--legendary); color: var(--legendary); box-shadow: 0 0 8px rgba(225, 177, 44, 0.3); }
+        /* Character & Stats */
+        .hero-summary { display:flex; align-items:center; gap:15px; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid #333; }
+        .hero-avatar { font-size: 3.5rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
+        .hero-info { flex:1; }
+        .xp-container { width: 100%; background: #333; height: 6px; border-radius: 3px; overflow: hidden; margin-top:5px; }
+        .xp-fill { height: 100%; background: linear-gradient(90deg, #8e44ad, #9b59b6); width: 0%; transition: width 0.5s; }
 
-        /* 裝備詳情彈窗 */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85);
-            display: none; justify-content: center; align-items: center; z-index: 100;
-        }
-        .modal-content {
-            background: #1e1e24; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px;
-            border: 1px solid #555; text-align: center;
-        }
-        .detail-stats { text-align: left; margin: 15px 0; background: #111; padding: 10px; border-radius: 4px; }
-        .detail-stat-row { display: flex; justify-content: space-between; margin: 3px 0; }
-        .bonus-stat { color: #2ecc71; font-size: 0.9em; } /* 附加屬性顏色 */
-        .req-stat { color: #e74c3c; font-size: 0.9em; margin-top: 5px; font-weight: bold; }
-        .req-ok { color: #2ecc71; }
+        .stat-box { background:rgba(0,0,0,0.3); padding:10px; border-radius:6px; margin-bottom:15px; border:1px solid #333; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px; }
+        
+        .equip-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #333; }
+        .equip-slot { aspect-ratio: 1; background: rgba(255,255,255,0.03); border: 1px solid #333; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; position: relative; transition: 0.2s; opacity: 0.5; filter: grayscale(1); }
+        .slot-equipped { border-color: var(--accent); background: rgba(251, 197, 49, 0.15); opacity: 1; filter: none; box-shadow: inset 0 0 10px rgba(251, 197, 49, 0.2); }
+        .slot-icon { font-size: 1.6rem; position: relative; }
+        .enhance-badge { position: absolute; top:-5px; right:-10px; background: var(--enhance); color:#fff; font-size:0.6rem; padding:1px 4px; border-radius:4px; font-weight:bold; box-shadow: 0 0 5px var(--enhance); }
+        .slot-name { font-size: 0.6rem; color: #7f8fa6; margin-top: 2px; }
+        .slot-equipped .slot-name { color: #fff; font-weight: bold; }
 
-        /* 商店寶箱 */
-        .chest-selector {
-            display: flex; overflow-x: auto; gap: 10px; padding: 10px; width: 100%; max-width: 600px; margin-bottom: 20px;
-        }
-        .chest-option {
-            min-width: 120px; background: #2f3640; padding: 10px; border-radius: 5px; border: 2px solid #555;
-            display: flex; flex-direction: column; align-items: center; cursor: pointer; opacity: 0.5;
-        }
-        .chest-option.unlocked { opacity: 1; border-color: var(--accent); }
-        .chest-option.selected { background: #3c4450; border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
-        .chest-icon { font-size: 2.5rem; margin-bottom: 5px; }
+        /* Inventory */
+        .inv-item { display: flex; flex-direction: row; align-items: center; background: rgba(255,255,255,0.03); padding: 10px; margin-bottom: 5px; border-left: 3px solid #555; border-radius: 4px; position: relative;}
+        .inv-info-box { display: flex; flex-direction: column; width: 65%; }
+        .inv-stats-box { font-size: 0.7rem; color: #aaa; margin-top: 2px; }
+        .inv-bonus-text { color: var(--enhance); font-size: 0.65rem; margin-top: 2px; display: block; }
+        .inv-actions { margin-left: auto; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+        
+        .btn-action { padding: 4px 8px; border: 1px solid #555; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.7rem; min-width: 50px; }
+        .btn-equip { background: #353b48; }
+        .btn-enhance { background: #8e44ad; border-color: #9b59b6; }
+        .btn-sell { background: #2c3e50; border-color: #c0392b; color: #e74c3c; }
 
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Map Select */
+        .map-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .map-card { background: rgba(255,255,255,0.05); border: 1px solid #444; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+        .map-card:hover { border-color: var(--primary); background: rgba(194, 54, 22, 0.1); }
+        .map-card.locked { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; border-color: #555; }
+        .map-icon { font-size: 2.5rem; margin-bottom: 5px; }
+        .map-name { font-weight: bold; color: #fff; }
+        .map-info { font-size: 0.7rem; color: #aaa; margin-top: 5px; }
 
+        /* Battle UI */
+        .hp-bar-container { width:100%; height:12px; background:#111; border:1px solid #444; border-radius:2px; overflow:hidden; margin-bottom:2px; }
+        .hp-fill { height:100%; width:100%; transition:width 0.3s; }
+        .timer-track { width: 100%; height: 8px; background: #333; margin-top: 10px; border-radius: 4px; overflow: hidden; border: 1px solid #555; }
+        .timer-bar { width: 100%; height: 100%; background: #00d2d3; transition: width 0.1s linear, background 0.3s; }
+
+        .quiz-panel { background: rgba(30, 30, 35, 0.95); border: 1px solid #571a1a; padding: 20px; margin-top: 5px; border-radius: 8px; }
+        .opt-btn { width: 100%; padding: 14px; margin-bottom: 8px; background: #2f3640; border: 1px solid #57606f; color: #dcdde1; font-size: 1.2rem; cursor: pointer; font-family: "KaiTi"; font-weight: bold; border-radius: 6px; }
+        #battle-tools { display:none; justify-content:center; gap:10px; margin-top:15px; flex-wrap: wrap; }
+        .tool-btn { flex: 1; padding: 10px; font-size: 0.9rem; background: #34495e; min-width: 80px; }
+        .flee-btn { background: #444; border-color: #7f8fa6; color: #a4b0be; flex: 0 0 100%; margin-top: 5px; }
+        #post-answer-actions { display: none; flex-direction: column; gap: 5px; margin-top: 10px; }
+        
+        .modal { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        .modal-box { background: #1e272e; width: 85%; max-width: 400px; padding: 30px; border: 1px solid var(--primary); text-align: center; border-radius: 10px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        .float-txt { position: absolute; left: 50%; top: 40%; transform: translateX(-50%); font-weight:bold; pointer-events: none; animation: popUp 0.8s forwards; z-index: 150; text-shadow: 2px 2px 0 #000; }
+        @keyframes popUp { 0%{opacity:0; transform:translate(-50%,0) scale(0.5);} 20%{opacity:1; transform:translate(-50%,-50px) scale(1.5);} 100%{opacity:0; transform:translate(-50%,-100px) scale(1);} }
+
+        /* Char Create specific */
+        .char-select-container { display: flex; flex-direction: column; gap: 10px; height: 350px; overflow-y: auto; margin: 15px 0; padding-right: 5px; }
+        .char-card { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 8px; padding: 10px; cursor: pointer; transition: 0.2s; }
+        .char-card.selected { border-color: var(--accent); background: rgba(251, 197, 49, 0.15); box-shadow: 0 0 10px rgba(251,197,49,0.3); }
+        .char-card-icon { font-size: 2.5rem; margin-right: 15px; }
+        .char-card-info { flex: 1; text-align: left; }
+        .char-card-name { font-weight: bold; font-size: 1.1rem; color: #fff; }
+        .char-card-job { font-size: 0.8rem; color: var(--accent); margin-bottom: 2px; }
+        .char-card-desc { font-size: 0.7rem; color: #aaa; }
+
+        #cover-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+
+        .daily-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px 0; }
+        .daily-day { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 6px; padding: 8px; text-align: center; position: relative; opacity: 0.6; }
+        .daily-day.active { border-color: var(--accent); opacity: 1; background: rgba(251, 197, 49, 0.1); transform: scale(1.05); box-shadow: 0 0 10px rgba(251,197,49,0.2); }
+        .daily-day.claimed { border-color: #2ecc71; opacity: 0.4; filter: grayscale(1); }
+        .daily-icon { font-size: 1.5rem; margin-bottom: 4px; }
+        .daily-txt { font-size: 0.6rem; color: #aaa; }
+
+        .result-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid #444; }
+        .res-row { display: flex; justify-content: space-between; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px; margin-bottom: 5px; }
+        .res-val { font-weight: bold; color: #fff; }
+        .gacha-ticket-badge { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; position: absolute; top: -5px; right: -5px; font-weight: bold; animation: pulse 1s infinite; }
+        
+        /* New CSS for Rarity Colors */
+        .color-common { color: var(--common); }
+        .color-rare { color: var(--rare); text-shadow: 0 0 5px rgba(116, 185, 255, 0.3); }
+        .color-legend { color: var(--legend); text-shadow: 0 0 5px rgba(255, 234, 167, 0.3); }
+        .bonus-attr { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--enhance); margin-top: 1px; }
     </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <div style="font-weight:900; color:var(--accent);">字靈獵人</div>
-        <div class="res-box">
-            <div class="res-item">🪙 <span id="ui-gold">0</span></div>
-            <div class="res-item">💎 <span id="ui-gems">0</span></div>
-            <div class="res-item">Lv.<span id="ui-lvl">1</span></div>
+<div class="embers"></div>
+
+<div id="cover-screen">
+    <div style="font-size:5rem; margin-bottom: 10px; filter: drop-shadow(0 0 20px var(--primary));">🔥</div>
+    <div style="font-size: 3rem; color: var(--primary); letter-spacing: 3px; font-weight: bold;">字靈獵人</div>
+    <p style="color:#7f8fa6; letter-spacing: 2px;">V50 強化大改版</p>
+    <div id="status-text" style="color:#2ecc71; margin: 15px 0;">載入中...</div>
+    <button class="start-btn" onclick="initGameSafe()">進入世界</button>
+    <div style="margin-top:20px; color:#555; cursor:pointer; text-decoration:underline; font-size:0.8rem;" onclick="hardReset()">重置進度 (Reset)</div>
+</div>
+
+<div class="modal" id="char-create-modal" style="z-index: 200;">
+    <div class="modal-box">
+        <h2 style="color:var(--accent);">選擇您的化身</h2>
+        <div class="char-select-container" id="avatar-grid"></div>
+        <button class="start-btn" onclick="confirmCharacter()">確認選擇</button>
+    </div>
+</div>
+
+<div class="app-container" id="app-ui" style="display:none;">
+    <div class="top-header">
+        <div class="top-bar">
+            <div style="cursor:pointer;" onclick="toggleMute()" id="sound-btn">🔊</div>
+            <div class="gems">💎 <span id="ui-gems">0</span></div>
+        </div>
+        <div class="nav-bar">
+            <button class="nav-btn active" onclick="switchTab('char')">👤 獵人</button>
+            <button class="nav-btn" onclick="switchTab('battle')">⚔️ 戰鬥</button>
+            <button class="nav-btn" onclick="switchTab('gacha')">💎 寶庫</button>
         </div>
     </div>
 
-    <div class="main-container">
-        <div id="tab-battle" class="tab-page active">
-            <div class="battle-area">
-                <div style="font-size:1.2rem; margin-bottom:5px;">第 <span id="ui-floor">1</span> 層</div>
-                <div class="enemy-box">
-                    <div class="enemy-sprite" id="enemy-visual">👻</div>
+    <div id="tab-char" class="content tab-page active">
+        <div class="hero-summary">
+            <div class="hero-avatar" id="ui-avatar">🥷</div>
+            <div class="hero-info">
+                <div style="font-size:1.2rem; color:var(--accent);">
+                    <span id="ui-name">Name</span> <span style="font-size:0.8rem; color:#aaa;" id="ui-job">Job</span>
                 </div>
-                <div class="hp-bar-bg"><div class="hp-bar-fill" id="enemy-hp-bar"></div></div>
-                <div style="margin-bottom:15px;">HP: <span id="enemy-hp">100</span> / <span id="enemy-max-hp">100</span></div>
+                <div style="font-size:0.8rem; background:#444; padding:2px 6px; border-radius:4px; display:inline-block; margin:2px 0;">Lv.<span id="ui-lvl">1</span></div>
+                <div class="xp-container"><div class="xp-fill" id="ui-xp-bar"></div></div>
+                <div style="font-size:0.7rem; color:#aaa; margin-top:2px;">EXP: <span id="ui-xp-text">0/100</span></div>
+            </div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-row"><span>⚔️ 攻擊 (ATK)</span><span id="stat-atk" style="color:#e74c3c">0</span></div>
+            <div class="stat-row"><span>🛡️ 防禦 (DEF)</span><span id="stat-def" style="color:#3498db">0</span></div>
+            <div class="stat-row"><span>❤️ 生命 (HP)</span><span id="stat-hp" style="color:#2ecc71">0</span></div>
+            <div class="stat-row"><span>⚡ 暴擊 (CRIT)</span><span id="stat-crit" style="color:#f1c40f">0%</span></div>
+            <div class="stat-row"><span>💨 閃避 (DODGE)</span><span id="stat-dodge" style="color:#9b59b6">0%</span></div>
+            <div class="stat-row"><span>🍀 幸運 (LUCK)</span><span id="stat-luck" style="color:var(--luck)">0%</span></div>
+            <div style="margin-top:10px; border-top:1px solid #444; padding-top:5px;">
+                <div class="stat-row"><span>🎯 正確率</span><span id="stat-acc">0%</span></div>
+                <div class="stat-row"><span>📝 總題數</span><span id="stat-total-q">0</span></div>
+                <div class="stat-row"><span>🔥 最高連對</span><span id="stat-max-streak">0</span></div>
+            </div>
+        </div>
+
+        <div class="equip-grid">
+            <div class="equip-slot" id="slot-head" onclick="unequip('head')"><div class="slot-icon">⛑️</div><div class="slot-name">頭盔</div></div>
+            <div class="equip-slot" id="slot-body" onclick="unequip('body')"><div class="slot-icon">👕</div><div class="slot-name">鎧甲</div></div>
+            <div class="equip-slot" id="slot-gloves" onclick="unequip('gloves')"><div class="slot-icon">🧤</div><div class="slot-name">護手</div></div>
+            <div class="equip-slot" id="slot-legs" onclick="unequip('legs')"><div class="slot-icon">👖</div><div class="slot-name">護腿</div></div>
+            <div class="equip-slot" id="slot-feet" onclick="unequip('feet')"><div class="slot-icon">👢</div><div class="slot-name">戰靴</div></div>
+            <div class="equip-slot" id="slot-accessory" onclick="unequip('accessory')"><div class="slot-icon">💍</div><div class="slot-name">飾品</div></div>
+            <div class="equip-slot" id="slot-weapon" onclick="unequip('weapon')"><div class="slot-icon">⚔️</div><div class="slot-name">武器</div></div>
+            <div class="equip-slot" id="slot-offhand" onclick="unequip('offhand')"><div class="slot-icon">🛡️</div><div class="slot-name">防具</div></div>
+        </div>
+
+        <div id="inventory-list" style="padding-bottom:60px;"></div>
+    </div>
+
+    <div id="tab-battle" class="content tab-page">
+        <div id="map-select-screen">
+            <div style="font-size:1.5rem; text-align:center; color:var(--primary); font-weight:bold; margin-bottom:15px;">選擇狩獵區域</div>
+            <div class="map-grid" id="map-grid"></div>
+        </div>
+
+        <div id="battle-active-screen" style="display:none;">
+            <div style="text-align:center; margin-top:5px;">
+                <div style="font-size:3rem; filter:drop-shadow(0 0 30px #e74c3c); transition:0.2s;" id="boss-sprite">👹</div>
+                <div style="color:var(--primary); font-size:1.4rem; font-weight:bold;">
+                    <span id="enemy-name">DEMON</span> <span style="font-size:1rem; color:#aaa;">Lv.<span id="enemy-level">1</span></span>
+                </div>
+                <div id="enemy-trait" style="font-size:0.8rem; color:#f1c40f; margin-bottom:5px; height:20px;"></div>
                 
-                <div class="quiz-box" id="quiz-container">
-                    <div class="quiz-question" id="q-text">題目載入中...</div>
-                    <div class="quiz-options" id="q-options">
-                        </div>
+                <div class="hp-bar-container"><div id="boss-hp-bar" class="hp-fill" style="background:#c0392b;"></div></div>
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#aaa; margin-bottom:10px;">
+                    <span>ENEMY</span><span id="boss-hp-text"></span>
                 </div>
-            </div>
-            <div style="margin-top:auto; padding:10px; color:#777; font-size:0.8rem;">正確答題攻擊敵人，錯誤答題扣血</div>
-        </div>
 
-        <div id="tab-hero" class="tab-page">
-            <div style="display:flex; justify-content:space-between; width:100%; max-width:600px; margin-bottom:15px; background:#222; padding:10px; border-radius:5px;">
-                <div>
-                    <div>攻擊力: <span id="stat-atk" style="color:var(--primary)">0</span></div>
-                    <div>防禦力: <span id="stat-def" style="color:#3498db">0</span></div>
-                </div>
-                <div>
-                    <div>生命值: <span id="stat-hp" style="color:#2ecc71">0</span></div>
-                    <div>爆擊率: <span id="stat-crit" style="color:var(--accent)">0</span>%</div>
+                <div class="hp-bar-container" style="height:8px;"><div id="player-hp-bar" class="hp-fill" style="background:#27ae60;"></div></div>
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#aaa;">
+                    <span>PLAYER</span><span id="player-hp-text"></span>
                 </div>
             </div>
-            <h3>裝備欄位</h3>
-            <div class="inventory-grid" id="equip-slots" style="margin-bottom:20px; min-height:100px;">
-                </div>
-            <h3>背包 (<span id="inv-count">0</span>/50)</h3>
-            <div style="margin-bottom:10px;">
-                <button class="btn" onclick="sortInventory()">整理背包</button>
-                <button class="btn" style="background:#c0392b" onclick="sellAllCommon()">一鍵出售普通</button>
-            </div>
-            <div class="inventory-grid" id="inventory-list">
-                </div>
-        </div>
 
-        <div id="tab-shop" class="tab-page">
-            <h2>虛空寶箱</h2>
-            <p style="color:#aaa; font-size:0.9rem;">每 10 級解鎖更高級的寶箱</p>
+            <div class="timer-track"><div class="timer-bar" id="battle-timer-bar"></div></div>
+            <div id="quiz-area" style="margin-top:10px;"></div>
             
-            <div class="chest-selector" id="chest-list">
-                </div>
+            <div id="post-answer-actions">
+                <button class="start-btn" onclick="nextTurn()">➡️ 下一回合</button>
+                <button class="start-btn btn-dict" id="btn-dict-link" onclick="openDictionary()">🔍 教育部辭典 (查看解說)</button>
+                <div style="text-align:center;"><button class="start-btn btn-fix" onclick="fixError()">🛠️ 修正答案 (補血)</button></div>
+            </div>
 
-            <div style="text-align:center; margin-top:20px; background:#222; padding:20px; border-radius:10px; width:90%; max-width:400px;">
-                <h3 id="selected-chest-name">請選擇寶箱</h3>
-                <p id="selected-chest-desc" style="color:#888;">--</p>
-                <button class="btn btn-accent" id="btn-draw" onclick="drawChest()" style="font-size:1.2rem; padding:10px 30px; margin-top:10px;">
-                    抽取 (💎<span id="draw-cost">--</span>)
-                </button>
+            <div id="battle-tools" style="display:flex;">
+                <button class="start-btn tool-btn" onclick="usePotion()">🧪 補血 (<span id="btn-potion-count">0</span>)</button>
+                <button class="start-btn tool-btn" onclick="useShield()">🛡️ 護盾 (<span id="btn-shield-count">0</span>)</button>
+                <button class="start-btn tool-btn flee-btn" onclick="fleeBattle()">🏳️ 撤退</button>
             </div>
         </div>
     </div>
 
-    <div class="nav-bar">
-        <button class="nav-btn active" onclick="switchTab('battle')">⚔️</button>
-        <button class="nav-btn" onclick="switchTab('hero')">🎒</button>
-        <button class="nav-btn" onclick="switchTab('shop')">🛒</button>
-    </div>
-
-    <div id="item-modal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <h2 id="modal-name">裝備名稱</h2>
-            <div id="modal-rarity" style="margin-bottom:10px;">稀有度</div>
-            <div class="detail-stats" id="modal-stats">
-                </div>
-            <div id="modal-req-lvl" class="req-stat">需求等級: 1</div>
-            <div style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
-                <button class="btn btn-primary" id="btn-equip" onclick="doEquip()">裝備</button>
-                <button class="btn" id="btn-enhance" onclick="doEnhance()" style="background:var(--enhance); border-color:#be2edd">強化 (+<span id="modal-next-enhance">1</span>)</button>
-                <button class="btn" onclick="doSell()" style="background:#7f8c8d">出售</button>
+    <div id="tab-gacha" class="content tab-page">
+        <div style="text-align:center; padding-top:20px;">
+            <div style="font-size:6rem; margin-bottom:10px; filter:drop-shadow(0 0 30px var(--luck)); animation: float 3s infinite;">🎁</div>
+            <h2 style="color:var(--accent);">幸運寶箱</h2>
+            <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:8px; display:inline-block; margin-bottom:15px; border:1px solid #444;">
+                目前持有：<span style="color:var(--accent); font-weight:bold; font-size:1.2rem;" id="gacha-gems-display">0</span> 💎
             </div>
-            <div id="enhance-cost-display" style="font-size:0.8rem; color:#aaa; margin-top:5px;"></div>
+            
+            <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid #555; width: 90%; margin: 0 auto 20px auto;">
+                <div style="color: var(--enhance); font-size: 1.1rem; font-weight: bold; margin-bottom: 5px;" id="chest-name">普通寶箱 (Lv.1-10)</div>
+                <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">解鎖等級: <span id="chest-unlock-lv">1</span></div>
+                <div style="font-size: 0.9rem; color: var(--luck); margin-bottom: 10px; font-weight: bold;">幸運加成: +<span id="gacha-luck-val">0</span>%</div>
+                <button class="start-btn" id="btn-gacha-pull" style="background:var(--luck); color:#000; position:relative;" onclick="pullGacha()">開啟 (<span id="gacha-cost">10</span>💎)</button>
+            </div>
+            
+            <p style="color:#7f8fa6; font-size:0.8rem; padding: 0 20px;">每提升 10 級解鎖更高級寶箱。<br>高級寶箱可獲得更強力的初始裝備。</p>
         </div>
     </div>
+
+    <div class="modal" id="daily-login-modal">
+        <div class="modal-box" style="border-color: var(--luck);">
+            <div style="font-size:3rem; margin-bottom:10px;">📅</div>
+            <h2 style="color:var(--luck); margin:0;">每日簽到</h2>
+            <p style="color:#aaa; font-size:0.8rem;">連續登入：<span id="login-streak-num" style="color:#fff; font-weight:bold;">1</span> 天</p>
+            <div class="daily-grid" id="daily-list"></div>
+            <div id="today-reward-msg" style="color:#fff; margin-bottom:15px; font-weight:bold;"></div>
+            <button class="start-btn" onclick="closeDailyModal()">領取獎勵</button>
+        </div>
+    </div>
+
+    <div class="modal" id="enhance-modal">
+        <div class="modal-box" style="border-color: var(--enhance);">
+            <div style="font-size:3rem; margin-bottom:5px;">⚒️</div>
+            <h2 style="color:var(--enhance); margin:0 0 10px 0;">裝備強化</h2>
+            <div id="enhance-info" style="color:#ddd; font-size:0.9rem; margin-bottom:15px; text-align:left;"></div>
+            <button class="start-btn" style="background:var(--enhance);" onclick="doEnhance()">強化 (消耗💎)</button>
+            <button class="start-btn btn-secondary" onclick="closeEnhanceModal()" style="margin-top:10px;">取消</button>
+        </div>
+    </div>
+
+    <div class="modal" id="battle-result-modal"><div class="modal-box"></div></div>
+</div>
 
 <script>
-    // --- 遊戲資料設定 ---
-    
-    // 寶箱設定
-    // 價格: 10, 20, 35, 50, 70, 90, 115, 140, 170, 200
-    // 解鎖等級: 1, 10, 20, 30... 90
-    // 掉落區間: 1-10, 11-20...
-    const CHEST_CONFIG = [
-        { tier: 0, minLvl: 1,  dropMin: 1,  dropMax: 10, cost: 10,  name: "初始寶箱" },
-        { tier: 1, minLvl: 10, dropMin: 11, dropMax: 20, cost: 20,  name: "青銅寶箱" },
-        { tier: 2, minLvl: 20, dropMin: 21, dropMax: 30, cost: 35,  name: "黑鐵寶箱" },
-        { tier: 3, minLvl: 30, dropMin: 31, dropMax: 40, cost: 50,  name: "白銀寶箱" },
-        { tier: 4, minLvl: 40, dropMin: 41, dropMax: 50, cost: 70,  name: "黃金寶箱" },
-        { tier: 5, minLvl: 50, dropMin: 51, dropMax: 60, cost: 90,  name: "白金寶箱" },
-        { tier: 6, minLvl: 60, dropMin: 61, dropMax: 70, cost: 115, name: "鑽石寶箱" },
-        { tier: 7, minLvl: 70, dropMin: 71, dropMax: 80, cost: 140, name: "大師寶箱" },
-        { tier: 8, minLvl: 80, dropMin: 81, dropMax: 90, cost: 170, name: "宗師寶箱" },
-        { tier: 9, minLvl: 90, dropMin: 91, dropMax: 100, cost: 200, name: "王者寶箱" }
-    ];
+/**
+ * 遊戲引擎 V50 (裝備強化大改版)
+ */
 
-    const PARTS = { head:'頭盔', body:'鎧甲', legs:'護腿', feet:'戰靴', gloves:'護手', weapon:'武器', offhand:'盾牌', accessory:'飾品' };
-    const PART_ICONS = { head:'⛑️', body:'👕', legs:'👖', feet:'👢', gloves:'🧤', weapon:'⚔️', offhand:'🛡️', accessory:'💍' };
-    const RARITY_NAMES = ['普通', '稀有', '傳說'];
-    
-    // 遊戲狀態
-    let player = {
-        level: 1,
-        exp: 0,
-        maxExp: 100,
-        gold: 1000,
-        gems: 50,
-        floor: 1,
-        hp: 100,
-        maxHp: 100,
-        inventory: [], // 背包
-        equipped: {},  // 已裝備部位
-        stats: { atk:10, def:0, crit:0, luck:0 } // 總屬性
-    };
+const AudioEngine = {
+    ctx: null, isMuted: false, intervalId: null, step: 0,
+    init: function() {
+        if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+    },
+    playTone: function(freq, type, duration, vol=0.1, detune=0) {
+        if(this.isMuted || !this.ctx) return;
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime); if(detune) osc.detune.value = detune;
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+        osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + duration);
+    },
+    playNoise: function(duration, vol) {
+        if(this.isMuted || !this.ctx) return;
+        const b = this.ctx.createBuffer(1, this.ctx.sampleRate*duration, this.ctx.sampleRate);
+        const d = b.getChannelData(0); for(let i=0;i<b.length;i++) d[i]=Math.random()*2-1;
+        const n = this.ctx.createBufferSource(); n.buffer=b; const g=this.ctx.createGain(); g.gain.value=vol;
+        n.connect(g); g.connect(this.ctx.destination); n.start();
+    },
+    sfx: {
+        click: () => AudioEngine.playTone(800, 'sine', 0.05, 0.05),
+        confirm: () => { AudioEngine.playTone(600, 'square', 0.1); setTimeout(()=>AudioEngine.playTone(800, 'square', 0.1), 100); },
+        coin: () => { AudioEngine.playTone(1500, 'sine', 0.1); setTimeout(()=>AudioEngine.playTone(2000, 'sine', 0.2), 50); },
+        enhance: () => { [400,500,600,800].forEach((f,i)=>setTimeout(()=>AudioEngine.playTone(f,'square',0.1,0.1),i*100)); },
+        enhanceFail: () => { AudioEngine.playTone(150, 'sawtooth', 0.5); },
+        gacha: () => { [523,659,783,1046,1318].forEach((f,i)=>setTimeout(()=>AudioEngine.playTone(f,'triangle',0.2,0.1),i*80)); },
+        attack: () => { AudioEngine.playNoise(0.15, 0.3); AudioEngine.playTone(100, 'sawtooth', 0.2, 0.2); },
+        hit: () => { AudioEngine.playTone(80, 'sawtooth', 0.3, 0.4); },
+        win: () => { AudioEngine.playTone(660, 'sine', 0.1); setTimeout(()=>AudioEngine.playTone(880, 'sine', 0.3), 100); },
+        wrong: () => { AudioEngine.playTone(150, 'sawtooth', 0.2); setTimeout(()=>AudioEngine.playTone(100, 'sawtooth', 0.2), 100); },
+        tick: () => AudioEngine.playTone(1000, 'square', 0.05, 0.05),
+        ult: () => { AudioEngine.playNoise(0.5, 0.5); [100, 200, 100].forEach((f,i)=> setTimeout(()=>AudioEngine.playTone(f, 'sawtooth', 0.2, 0.5), i*100)); },
+        victoryTheme: () => { AudioEngine.stopBGM(); [523, 523, 523, 659, 783, 1046].forEach((f,i)=> setTimeout(()=>AudioEngine.playTone(f, 'square', 0.4, 0.2), i*180)); }
+    },
+    playBGM: function(isBattle) {
+        if(this.intervalId) clearInterval(this.intervalId);
+        if(this.isMuted) return;
+        this.step = 0; const speed = isBattle ? 115 : 300;
+        const BASS_LINE = [65.4, 65.4, 65.4, 65.4, 65.4, 65.4, 65.4, 65.4, 103.8, 103.8, 103.8, 103.8, 87.3, 87.3, 98.0, 116.5];
+        this.intervalId = setInterval(() => {
+            if(this.isMuted) return;
+            if (isBattle) {
+                if (this.step % 4 === 0) { AudioEngine.playTone(150, 'sine', 0.1, 0.8); AudioEngine.playTone(50, 'sine', 0.1, 0.8); }
+                if (this.step % 8 === 4) AudioEngine.playNoise(0.1, 0.3);
+                if (this.step % 2 === 0) { const bass = BASS_LINE[Math.floor(this.step/16) % BASS_LINE.length]; AudioEngine.playTone(bass, 'sawtooth', 0.2, 0.15); AudioEngine.playTone(bass, 'sawtooth', 0.2, 0.15, 10); }
+                if (Math.floor(this.step/16) >= 2) { const ms = this.step % 32; let l = 0; if(ms===0)l=523.25; if(ms===6)l=622.25; if(ms===12)l=783.99; if(ms===16)l=698.46; if(l) AudioEngine.playTone(l, 'square', 0.2, 0.08); }
+            } else {
+                if (this.step % 8 === 0) { const n = [261, 293, 329, 392][Math.floor(this.step/8)%4]; AudioEngine.playTone(n, 'sine', 1.5, 0.05); AudioEngine.playTone(n*1.5, 'sine', 1.5, 0.03); }
+            }
+            this.step++;
+        }, speed);
+    },
+    stopBGM: function() { if(this.intervalId) clearInterval(this.intervalId); }
+};
 
-    let currentEnemy = null;
-    let selectedChestIndex = 0;
-    let selectedItemIndex = -1; // 用於彈窗操作
+// --- Game Data ---
+const JOB_DATA = {
+    knight: { name:'帝國騎士', desc:'攻守平衡', growth:{atk:1.2, def:1.2, hp:1.0, luck:1.0, crit:0, dodge:0} },
+    guardian: { name:'重裝護衛', desc:'防禦特化', growth:{atk:0.8, def:1.5, hp:1.2, luck:0.8, crit:0, dodge:0} },
+    assassin: { name:'暗影刺客', desc:'高攻暴擊', growth:{atk:1.4, def:0.8, hp:0.9, luck:1.1, crit:5, dodge:5} },
+    ranger: { name:'森林遊俠', desc:'幸運閃避', growth:{atk:1.1, def:0.9, hp:1.0, luck:1.3, crit:3, dodge:8} }
+};
 
-    // 音效模擬
-    const AudioEngine = {
-        sfx: { click: () => {}, win: () => {}, hit: () => {}, correct: () => {}, wrong: () => {} }
-    };
+const CHEST_DATA = {
+    prices: [10, 20, 35, 50, 70, 90, 115, 140, 170, 200],
+    getTier: (lvl) => Math.min(9, Math.floor(lvl / 10))
+};
 
-    // --- 核心邏輯 ---
+const MONSTER_PREFIXES = ['飢餓的','狂暴的','受詛咒的','遠古的','著火的','冰霜的','帶電的','巨大的','迅捷的','黑暗的'];
+const MONSTER_NAMES = ['史萊姆','哥布林','惡狼','骷髏兵','半獸人','巨魔','石像鬼','地獄犬','牛頭人','獨眼巨人','黑龍'];
 
-    function init() {
-        loadData();
-        updateStats();
-        renderUI();
-        renderChests();
-        nextBattle();
-    }
+let player = {
+    name: 'Player', job: 'knight', level: 1, xp: 0, maxXp: 100, gems: 0,
+    baseStats: { atk:10, def:5, hp:100, crit:5, dodge:5, luck:0 },
+    inventory: [], equipped: {}, maxMap: 1, dailyLogin: 0, lastLogin: null
+};
+let battleState = { active: false, enemy: null, timer: 0, maxTime: 10, interval: null, questions: [], combo: 0, maxCombo: 0, totalQ: 0, correctQ: 0 };
+let currentTargetItem = null;
 
-    // 建立裝備 (核心修改: 增加等級參數)
-    function createItem(lvlMin, lvlMax) {
-        // 隨機等級
-        const level = Math.floor(Math.random() * (lvlMax - lvlMin + 1)) + lvlMin;
-        
-        // 稀有度權重 (運氣影響)
-        const roll = Math.random() * 100;
-        let rarity = 1;
-        if (roll < 5 + (player.stats.luck * 0.1)) rarity = 3;
-        else if (roll < 25 + (player.stats.luck * 0.2)) rarity = 2;
-
-        const partKeys = Object.keys(PARTS);
-        const part = partKeys[Math.floor(Math.random() * partKeys.length)];
-        
-        // 基礎數值計算 (隨等級成長)
-        const baseMult = level * 1.5; // 等級係數
-        const rMult = rarity; // 稀有度係數
-
-        let item = {
-            id: Date.now() + Math.random(),
-            name: `Lv.${level} ${RARITY_NAMES[rarity-1]}${PARTS[part]}`,
-            part: part,
-            rarity: rarity,
-            level: level,      // 裝備等級
-            reqLevel: level,   // 需求等級 (通常等於物品等級)
-            enhance: 0,        // 強化等級
-            icon: PART_ICONS[part],
-            baseStats: {},     // 基礎白值
-            bonusStats: []     // 強化解鎖的綠字
-        };
-
-        // 設定基礎屬性
-        if (part === 'weapon') { item.baseStats.atk = Math.floor((10 + level * 2) * rMult); item.baseStats.crit = Math.floor(rarity * level * 0.1); }
-        else if (part === 'body') { item.baseStats.hp = Math.floor((50 + level * 10) * rMult); item.baseStats.def = Math.floor(level * rMult); }
-        else if (part === 'offhand') { item.baseStats.def = Math.floor((5 + level * 1.5) * rMult); item.baseStats.hp = Math.floor(level * 5); }
-        else if (part === 'accessory') { item.baseStats.luck = Math.floor(rarity * level * 0.5); item.baseStats.crit = Math.floor(rarity); }
-        else { 
-            // 其他防具
-            item.baseStats.def = Math.floor((2 + level) * rMult); 
-            item.baseStats.hp = Math.floor(level * 3);
-        }
-
-        // 清理 0 的屬性
-        for(let k in item.baseStats) { if(item.baseStats[k] <= 0) delete item.baseStats[k]; }
-
-        return item;
-    }
-
-    // 強化裝備 (核心修改)
-    function enhanceItem(item) {
-        if (item.enhance >= 15) return false;
-        
-        // 成本計算 (隨等級與強化階級提升)
-        const cost = Math.floor((item.level * 10 + 50) * (item.enhance + 1));
-        if (player.gold < cost) {
-            alert("金幣不足！");
-            return false;
-        }
-
-        player.gold -= cost;
-        item.enhance += 1;
-
-        // 1. 提升基礎數值 (每級約 +5% 基礎值，或至少 +1)
-        for (let key in item.baseStats) {
-            let increase = Math.ceil(item.baseStats[key] * 0.05);
-            if (increase < 1) increase = 1;
-            item.baseStats[key] += increase;
-        }
-
-        // 2. 每 +5 解鎖附加屬性 (最多 3 條)
-        if (item.enhance % 5 === 0) {
-            addBonusStat(item);
-            alert(`強化成功！裝備獲得了新的附加屬性！`);
+// --- Init ---
+function initGameSafe() {
+    try {
+        if (localStorage.getItem('wordHunterSaveV50')) {
+            const save = JSON.parse(localStorage.getItem('wordHunterSaveV50'));
+            // Migration for old saves or partial data
+            if(!save.equipped) save.equipped = {};
+            player = save;
         } else {
-            // alert(`強化成功！+${item.enhance}`);
+            document.getElementById('cover-screen').style.display='none';
+            document.getElementById('char-create-modal').style.display='flex';
+            renderCharSelect();
+            return; 
         }
+        document.getElementById('cover-screen').style.display='none';
+        document.getElementById('app-ui').style.display='flex';
+        AudioEngine.init(); AudioEngine.playBGM(false);
+        updateUI(); renderMap();
+    } catch(e) { hardReset(); }
+}
 
-        saveData();
-        renderUI();
-        updateModalContent(); // 如果彈窗開著，更新彈窗
-        return true;
+function hardReset() {
+    localStorage.removeItem('wordHunterSaveV50');
+    location.reload();
+}
+
+function saveData() { localStorage.setItem('wordHunterSaveV50', JSON.stringify(player)); }
+
+// --- Character Creation ---
+function renderCharSelect() {
+    const grid = document.getElementById('avatar-grid'); grid.innerHTML = '';
+    const icons = {knight:'🛡️', guardian:'🏯', assassin:'🗡️', ranger:'🏹'};
+    Object.keys(JOB_DATA).forEach(key => {
+        const job = JOB_DATA[key];
+        const el = document.createElement('div'); el.className = 'char-card';
+        el.onclick = () => { document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); player.job = key; };
+        if(player.job === key) el.classList.add('selected');
+        el.innerHTML = `<div class="char-card-icon">${icons[key]}</div><div class="char-card-info"><div class="char-card-name">${job.name}</div><div class="char-card-job">${job.desc}</div></div>`;
+        grid.appendChild(el);
+    });
+}
+function confirmCharacter() {
+    player.name = "獵人"; 
+    player.baseStats = { ...player.baseStats, ...JOB_DATA[player.job].growth }; 
+    player.baseStats.hp *= 100; player.baseStats.atk *= 10; player.baseStats.def *= 5; // Scale initial
+    // Give starter gear
+    player.inventory.push({
+        id: Date.now(), name: '新兵木劍', slot: 'weapon', rarity: 1, level: 0, reqLv: 1,
+        atk: 5, def: 0, hp: 0, luck: 0, crit: 0, icon: '⚔️', bonuses: []
+    });
+    document.getElementById('char-create-modal').style.display='none';
+    document.getElementById('app-ui').style.display='flex';
+    AudioEngine.init(); AudioEngine.playBGM(false);
+    saveData(); updateUI(); renderMap();
+}
+
+// --- Equipment System (Updated) ---
+// Chest Tiers logic
+function getChestInfo() {
+    const tier = CHEST_DATA.getTier(player.level);
+    const cost = CHEST_DATA.prices[tier];
+    const minLv = tier * 10 + 1;
+    const maxLv = (tier + 1) * 10;
+    return { tier, cost, minLv, maxLv };
+}
+
+function generateItem(minLv, maxLv) {
+    const parts = ['head','body','legs','feet','gloves','weapon','offhand','accessory'];
+    const part = parts[Math.floor(Math.random()*parts.length)];
+    const rarityRand = Math.random();
+    // Increase rarity chance based on Luck
+    const luckFactor = (getStat('luck')/200); 
+    let rarity = 1; 
+    if(rarityRand < (0.05 + luckFactor)) rarity = 3; // Legend
+    else if(rarityRand < (0.25 + luckFactor)) rarity = 2; // Rare
+
+    // Item Level is random within the chest range
+    const itemLv = Math.floor(Math.random() * (maxLv - minLv + 1)) + minLv;
+    
+    // Base multiplier based on Item Level and Rarity
+    const baseMult = itemLv * (1 + rarity * 0.5); 
+
+    const names = {
+        head:['頭巾','頭盔','戰盔','龍面','皇冠'],
+        body:['布衣','皮甲','鎧甲','龍麟','聖甲'],
+        legs:['護腿','重腿甲','龍鱗腿','聖痕腿','暗影褲'],
+        feet:['草鞋','戰靴','重靴','龍之靴','光之靴'],
+        gloves:['手套','護腕','鐵手','龍爪','神手'],
+        weapon:['鐵劍','長槍','戰斧','巨劍','神劍'],
+        offhand:['木盾','圓盾','塔盾','龍盾','神盾'],
+        accessory:['戒指','項鍊','護符','寶珠','聖杯']
+    };
+    const icons = {head:'⛑️',body:'👕',legs:'👖',feet:'👢',gloves:'🧤',weapon:'⚔️',offhand:'🛡️',accessory:'💍'};
+    const rarityNames = ['普通','稀有','傳說'];
+    
+    const name = `${rarityNames[rarity-1]}${names[part][Math.floor(Math.random()*names[part].length)]}`;
+    
+    // Calculate stats
+    let atk=0, def=0, hp=0, crit=0, luck=0;
+    
+    if(part === 'weapon') { atk = Math.floor(5 * baseMult); crit = rarity; }
+    if(part === 'offhand') { def = Math.floor(3 * baseMult); hp = Math.floor(10 * baseMult); }
+    if(['head','body','legs','feet','gloves'].includes(part)) {
+        def = Math.floor(2 * baseMult);
+        hp = Math.floor(15 * baseMult);
     }
+    if(part === 'accessory') { luck = Math.floor(2 * baseMult); crit = Math.floor(1 * baseMult); }
 
-    // 增加附加屬性 logic
-    function addBonusStat(item) {
-        const types = [
-            { key: 'atk', name: '攻擊力' },
-            { key: 'def', name: '防禦力' },
-            { key: 'hp', name: '生命值' },
-            { key: 'crit', name: '爆擊率%' },
-            { key: 'luck', name: '幸運' }
+    return {
+        id: Date.now() + Math.random(),
+        name: name,
+        slot: part,
+        rarity: rarity,
+        level: 0,        // Enhancement level
+        reqLv: itemLv,   // Required player level
+        icon: icons[part],
+        atk: atk, def: def, hp: hp, luck: luck, crit: crit,
+        bonuses: []      // Array of strings or objects for extra stats
+    };
+}
+
+function pullGacha() {
+    const info = getChestInfo();
+    if(player.gems < info.cost) { alert('寶石不足！'); return; }
+    
+    player.gems -= info.cost;
+    AudioEngine.sfx.gacha();
+    
+    const item = generateItem(info.minLv, info.maxLv);
+    player.inventory.push(item);
+    
+    saveData(); updateUI();
+    setTimeout(() => {
+        alert(`獲得：Lv.${item.reqLv} ${item.name}`);
+    }, 500);
+}
+
+function equip(idx) {
+    const item = player.inventory[idx];
+    if(player.level < item.reqLv) {
+        alert(`等級不足！需要等級 ${item.reqLv} 才能裝備。`);
+        return;
+    }
+    
+    AudioEngine.sfx.click();
+    // Swap
+    const current = player.equipped[item.slot];
+    if (current) {
+        player.inventory[idx] = current; // Put old item back in slot
+    } else {
+        player.inventory.splice(idx, 1); // Remove from inventory
+    }
+    player.equipped[item.slot] = item;
+    
+    // Auto save and update
+    saveData(); updateUI();
+}
+
+function unequip(slot) {
+    if(!player.equipped[slot]) return;
+    AudioEngine.sfx.click();
+    player.inventory.push(player.equipped[slot]);
+    delete player.equipped[slot];
+    saveData(); updateUI();
+}
+
+// --- Enhancement System (Major Update) ---
+function openEnhanceModal(idx) {
+    currentTargetItem = player.inventory[idx];
+    if(!currentTargetItem) return;
+    document.getElementById('enhance-modal').style.display = 'flex';
+    renderEnhanceInfo();
+}
+
+function renderEnhanceInfo() {
+    const item = currentTargetItem;
+    const cost = Math.floor((item.level + 1) * 10 * (item.rarity));
+    const nextLvl = item.level + 1;
+    let html = `
+        <div style="text-align:center; margin-bottom:10px;">
+            <div style="font-size:2rem;">${item.icon}</div>
+            <div class="${getRarityClass(item.rarity)}">${item.name} (+${item.level})</div>
+            <div style="font-size:0.8rem; color:#aaa;">需求等級: Lv.${item.reqLv}</div>
+        </div>
+        <div>強化至 <span style="color:var(--enhance);">+${nextLvl}</span> 需要 <span style="color:var(--accent);">${cost} 💎</span></div>
+        <ul style="font-size:0.8rem; color:#ccc; padding-left:20px; margin-top:5px;">
+            <li>全屬性微幅提升</li>
+    `;
+    
+    if (nextLvl % 5 === 0) {
+        html += `<li style="color:var(--accent);">✨ 突破 +${nextLvl}：將獲得隨機附加屬性！</li>`;
+    }
+    
+    if (nextLvl > 15) {
+        html = `<div style="text-align:center; color:#e74c3c;">已達強化上限 (+15)</div>`;
+        document.querySelector('#enhance-modal .start-btn').style.display = 'none';
+    } else {
+        document.querySelector('#enhance-modal .start-btn').style.display = 'inline-block';
+        document.querySelector('#enhance-modal .start-btn').innerHTML = `強化 (-${cost}💎)`;
+    }
+    
+    html += `</ul>`;
+    document.getElementById('enhance-info').innerHTML = html;
+}
+
+function doEnhance() {
+    if(!currentTargetItem) return;
+    const item = currentTargetItem;
+    if(item.level >= 15) return;
+
+    const cost = Math.floor((item.level + 1) * 10 * (item.rarity));
+    if(player.gems < cost) { alert("寶石不足！"); return; }
+    
+    player.gems -= cost;
+    AudioEngine.sfx.enhance();
+    
+    // Logic
+    item.level++;
+    
+    // 1. Base Stat Increase (Every Level)
+    item.atk += Math.ceil(item.atk * 0.1) + 1;
+    item.def += Math.ceil(item.def * 0.1) + 1;
+    item.hp += Math.ceil(item.hp * 0.1) + 5;
+    
+    // 2. Bonus Attribute (Every 5 Levels)
+    if (item.level % 5 === 0) {
+        const bonusTypes = [
+            {code:'crit', name:'暴擊', unit:'%'},
+            {code:'dodge', name:'閃避', unit:'%'},
+            {code:'luck', name:'幸運', unit:'%'},
+            {code:'atk', name:'攻擊', unit:''},
+            {code:'def', name:'防禦', unit:''},
+            {code:'hp', name:'生命', unit:''}
         ];
-        const type = types[Math.floor(Math.random() * types.length)];
+        const type = bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
         
-        // 數值強度依賴稀有度與等級
-        // 普通: 係數 1, 稀有: 1.5, 傳說: 2.5
-        const rMult = item.rarity === 3 ? 2.5 : (item.rarity === 2 ? 1.5 : 1);
+        // Value based on rarity
         let val = 0;
-
-        if (type.key === 'crit') val = Math.floor((Math.random() * 2 + 1) * rMult); // 1-5%
-        else if (type.key === 'luck') val = Math.floor((Math.random() * 3 + 1) * rMult);
-        else if (type.key === 'hp') val = Math.floor((Math.random() * 50 + 20) * item.level * 0.2 * rMult);
-        else val = Math.floor((Math.random() * 5 + 2) * item.level * 0.2 * rMult);
-
+        if(type.code === 'atk' || type.code === 'def') val = item.rarity * 5 + Math.floor(Math.random()*5);
+        else if (type.code === 'hp') val = item.rarity * 20 + Math.floor(Math.random()*20);
+        else val = item.rarity + Math.floor(Math.random() * 2); // % based stats
+        
         if (val <= 0) val = 1;
-
-        item.bonusStats.push({ name: type.name, val: val, key: type.key });
-    }
-
-    // 裝備限制檢查
-    function canEquip(item) {
-        return player.level >= item.reqLevel;
-    }
-
-    // 抽寶箱
-    function drawChest() {
-        const chest = CHEST_CONFIG[selectedChestIndex];
         
-        // 檢查解鎖
-        if (player.level < chest.minLvl) {
-            alert(`等級不足！需達到 Lv.${chest.minLvl} 才能抽取此寶箱。`);
-            return;
-        }
-
-        if (player.gems < chest.cost) {
-            alert("鑽石不足！");
-            return;
-        }
-
-        if (player.inventory.length >= 50) {
-            alert("背包已滿！");
-            return;
-        }
-
-        player.gems -= chest.cost;
-        const newItem = createItem(chest.dropMin, chest.dropMax);
-        player.inventory.push(newItem);
+        if (!item.bonuses) item.bonuses = [];
+        item.bonuses.push({ name: type.name, val: val, unit: type.unit, type: type.code });
         
-        saveData();
-        updateStats();
-        renderUI();
+        // Apply passive stats directly to item properties for calculation ease
+        if(type.code === 'atk') item.atk += val;
+        else if(type.code === 'def') item.def += val;
+        else if(type.code === 'hp') item.hp += val;
+        else if(type.code === 'crit') item.crit += val;
+        else if(type.code === 'dodge') item.dodge += val;
+        else if(type.code === 'luck') item.luck += val;
         
-        // 簡單的獲得提示
-        setTimeout(() => alert(`獲得：${newItem.name}`), 100);
+        setTimeout(() => alert(`✨ 強化突破！獲得屬性：${type.name} +${val}${type.unit}`), 800);
     }
+    
+    saveData(); updateUI(); renderEnhanceInfo();
+}
 
-    // --- UI 渲染 ---
+function closeEnhanceModal() { document.getElementById('enhance-modal').style.display = 'none'; currentTargetItem = null; }
 
-    function switchTab(t) {
-        document.querySelectorAll('.tab-page').forEach(e => e.classList.remove('active'));
-        document.getElementById(`tab-${t}`).classList.add('active');
-        document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));
-        // 簡單處理 active button
-        if(t==='battle') document.querySelectorAll('.nav-btn')[0].classList.add('active');
-        if(t==='hero') document.querySelectorAll('.nav-btn')[1].classList.add('active');
-        if(t==='shop') document.querySelectorAll('.nav-btn')[2].classList.add('active');
-    }
+function sellItem(idx) {
+    if(!confirm('確定要販售嗎？')) return;
+    const item = player.inventory[idx];
+    const price = Math.floor((item.atk + item.def + item.hp/10) / 2);
+    player.gems += price;
+    player.inventory.splice(idx, 1);
+    AudioEngine.sfx.coin();
+    saveData(); updateUI();
+}
 
-    function renderChests() {
-        const container = document.getElementById('chest-list');
-        container.innerHTML = '';
-        CHEST_CONFIG.forEach((c, idx) => {
-            const el = document.createElement('div');
-            el.className = `chest-option ${player.level >= c.minLvl ? 'unlocked' : ''} ${idx === selectedChestIndex ? 'selected' : ''}`;
+// --- Stats & UI ---
+function getStat(key) {
+    let val = player.baseStats[key] || 0;
+    // Job growth scaling
+    const growth = JOB_DATA[player.job].growth;
+    // Level scaling (simplified)
+    if (key === 'atk') val += (player.level * 2 * growth.atk);
+    if (key === 'def') val += (player.level * 1 * growth.def);
+    if (key === 'hp') val += (player.level * 10 * growth.hp);
+    
+    // Equipment
+    Object.values(player.equipped).forEach(item => {
+        if(item[key]) val += item[key];
+    });
+    return Math.floor(val);
+}
+
+function getRarityClass(r) { return r===3 ? 'color-legend' : (r===2 ? 'color-rare' : 'color-common'); }
+
+function updateUI() {
+    document.getElementById('ui-gems').innerText = player.gems;
+    document.getElementById('gacha-gems-display').innerText = player.gems;
+    document.getElementById('ui-name').innerText = player.name;
+    document.getElementById('ui-job').innerText = JOB_DATA[player.job].name;
+    document.getElementById('ui-lvl').innerText = player.level;
+    document.getElementById('ui-xp-text').innerText = `${Math.floor(player.xp)}/${player.maxXp}`;
+    document.getElementById('ui-xp-bar').style.width = `${(player.xp/player.maxXp)*100}%`;
+    
+    // Stats
+    ['atk','def','hp','crit','dodge','luck'].forEach(k => {
+        const val = getStat(k);
+        document.getElementById(`stat-${k}`).innerText = val + (['crit','dodge','luck'].includes(k)?'%':'');
+    });
+    
+    // Stats Extra
+    const acc = battleState.totalQ > 0 ? Math.floor((battleState.correctQ/battleState.totalQ)*100) : 0;
+    document.getElementById('stat-acc').innerText = acc + "%";
+    document.getElementById('stat-total-q').innerText = battleState.totalQ;
+    document.getElementById('stat-max-streak').innerText = battleState.maxCombo;
+
+    // Gacha Button Update
+    const gInfo = getChestInfo();
+    document.getElementById('chest-name').innerText = `Lv.${gInfo.minLv}~${gInfo.maxLv} 裝備寶箱`;
+    document.getElementById('chest-unlock-lv').innerText = gInfo.tier * 10;
+    document.getElementById('gacha-cost').innerText = gInfo.cost;
+    document.getElementById('gacha-luck-val').innerText = getStat('luck');
+
+    // Equipped Slots
+    document.querySelectorAll('.equip-slot').forEach(el => {
+        el.className = 'equip-slot'; el.innerHTML = '';
+        const slot = el.id.replace('slot-', '');
+        const icons = {head:'⛑️',body:'👕',legs:'👖',feet:'👢',gloves:'🧤',weapon:'⚔️',offhand:'🛡️',accessory:'💍'};
+        const cnNames = {head:'頭盔',body:'鎧甲',legs:'護腿',feet:'戰靴',gloves:'護手',weapon:'武器',offhand:'防具',accessory:'飾品'};
+        
+        if(player.equipped[slot]) {
+            const item = player.equipped[slot];
+            el.classList.add('slot-equipped');
             el.innerHTML = `
-                <div class="chest-icon">🎁</div>
-                <div style="font-size:0.8rem; font-weight:bold;">${c.name}</div>
-                <div style="font-size:0.7rem;">Lv.${c.minLvl}解鎖</div>
+                <div class="slot-icon">${item.icon}</div>
+                ${item.level>0 ? `<div class="enhance-badge">+${item.level}</div>` : ''}
+                <div class="slot-name ${getRarityClass(item.rarity)}">${item.name}</div>
             `;
-            el.onclick = () => selectChest(idx);
-            container.appendChild(el);
-        });
-        selectChest(selectedChestIndex); // 更新顯示文字
-    }
-
-    function selectChest(idx) {
-        selectedChestIndex = idx;
-        const chest = CHEST_CONFIG[idx];
-        document.getElementById('selected-chest-name').innerText = chest.name;
-        document.getElementById('selected-chest-desc').innerText = `掉落 Lv.${chest.dropMin} ~ Lv.${chest.dropMax} 裝備`;
-        document.getElementById('draw-cost').innerText = chest.cost;
-        
-        // 重繪選取狀態
-        const opts = document.querySelectorAll('.chest-option');
-        opts.forEach((o, i) => {
-            if (i === idx) o.classList.add('selected');
-            else o.classList.remove('selected');
-        });
-
-        // 按鈕狀態
-        const btn = document.getElementById('btn-draw');
-        if (player.level < chest.minLvl) {
-            btn.style.opacity = 0.5;
-            btn.innerText = `需 Lv.${chest.minLvl} 解鎖`;
         } else {
-            btn.style.opacity = 1;
-            btn.innerText = `抽取 (💎${chest.cost})`;
+            el.innerHTML = `<div class="slot-icon">${icons[slot]}</div><div class="slot-name">${cnNames[slot]}</div>`;
         }
-    }
+    });
 
-    function renderInventory() {
-        const list = document.getElementById('inventory-list');
-        const slots = document.getElementById('equip-slots');
-        list.innerHTML = '';
-        slots.innerHTML = '';
-
-        // 渲染已裝備
-        Object.keys(player.equipped).forEach(part => {
-            const item = player.equipped[part];
-            if (item) {
-                slots.appendChild(createItemEl(item, true));
-            } else {
-                // 空格子
-                const empty = document.createElement('div');
-                empty.className = 'item-card';
-                empty.style.opacity = 0.3;
-                empty.innerHTML = `<div class="item-icon">${PART_ICONS[part]}</div><div class="item-info">${PARTS[part]}</div>`;
-                slots.appendChild(empty);
-            }
-        });
-
-        // 渲染背包
+    // Inventory List
+    const invList = document.getElementById('inventory-list');
+    invList.innerHTML = '';
+    if(player.inventory.length === 0) {
+        invList.innerHTML = '<div style="text-align:center; color:#555; margin-top:20px;">背包空空如也</div>';
+    } else {
         player.inventory.forEach((item, idx) => {
-            const el = createItemEl(item, false);
-            el.onclick = () => openModal(idx, false);
-            list.appendChild(el);
+            const el = document.createElement('div'); el.className = 'inv-item';
+            // Render bonuses
+            let bonusHtml = '';
+            if(item.bonuses && item.bonuses.length > 0) {
+                item.bonuses.forEach(b => {
+                    bonusHtml += `<span class="inv-bonus-text">🔸${b.name}+${b.val}${b.unit}</span>`;
+                });
+            }
+
+            const canEquip = player.level >= item.reqLv;
+            const reqColor = canEquip ? '#aaa' : '#e74c3c';
+
+            el.innerHTML = `
+                <div style="font-size:2rem; margin-right:10px;">${item.icon}</div>
+                <div class="inv-info-box">
+                    <div style="font-weight:bold; font-size:0.9rem;" class="${getRarityClass(item.rarity)}">${item.name} ${item.level>0?`+${item.level}`:''}</div>
+                    <div class="inv-stats-box">
+                        <span style="color:${reqColor}">Lv.${item.reqLv}</span> | 
+                        ${item.atk?`攻${item.atk} `:''}${item.def?`防${item.def} `:''}${item.hp?`命${item.hp}`:''}
+                    </div>
+                    ${bonusHtml}
+                </div>
+                <div class="inv-actions">
+                    <button class="btn-action btn-equip" onclick="equip(${idx})">裝備</button>
+                    <button class="btn-action btn-enhance" onclick="openEnhanceModal(${idx})">強化</button>
+                    <button class="btn-action btn-sell" onclick="sellItem(${idx})">出售</button>
+                </div>
+            `;
+            invList.appendChild(el);
         });
-
-        document.getElementById('inv-count').innerText = player.inventory.length;
     }
+}
 
-    function createItemEl(item, isEquipped) {
-        const el = document.createElement('div');
-        el.className = `item-card rarity-${item.rarity} ${isEquipped ? 'equipped' : ''}`;
-        if (isEquipped) el.onclick = () => openModal(-1, true, item.part); // 特殊處理已裝備點擊
+function switchTab(t) {
+    AudioEngine.sfx.click();
+    document.querySelectorAll('.tab-page').forEach(e=>e.classList.remove('active'));
+    document.getElementById(`tab-${t}`).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    updateUI();
+}
+function toggleMute() {
+    AudioEngine.isMuted = !AudioEngine.isMuted;
+    document.getElementById('sound-btn').innerText = AudioEngine.isMuted ? '🔇' : '🔊';
+    if(AudioEngine.isMuted) AudioEngine.stopBGM();
+    else AudioEngine.playBGM(battleState.active);
+}
 
-        el.innerHTML = `
-            <div class="item-lvl">Lv.${item.level}</div>
-            ${item.enhance > 0 ? `<div class="item-enhance">+${item.enhance}</div>` : ''}
-            <div class="item-icon">${item.icon}</div>
-            <div class="item-info">${item.name.split(' ')[1]}</div>
+// --- Battle Logic ---
+function renderMap() {
+    const grid = document.getElementById('map-grid'); grid.innerHTML = '';
+    const maps = [
+        {id:1, name:'試煉平原', minLv:1}, {id:2, name:'幽暗森林', minLv:5},
+        {id:3, name:'哥布林營地', minLv:10}, {id:4, name:'詛咒廢墟', minLv:15},
+        {id:5, name:'龍之峽谷', minLv:25}, {id:6, name:'魔王之塔', minLv:40}
+    ];
+    maps.forEach(m => {
+        const locked = player.level < m.minLv;
+        const div = document.createElement('div');
+        div.className = `map-card ${locked?'locked':''}`;
+        div.onclick = () => { if(!locked) startBattle(m); };
+        div.innerHTML = `
+            <div class="map-icon">${['🌲','🍄','⛺','🏰','🌋','💀'][m.id-1]}</div>
+            <div class="map-name">${m.name}</div>
+            <div class="map-info">${locked ? `Lv.${m.minLv} 解鎖` : '建議等級 Lv.'+m.minLv}</div>
         `;
-        return el;
-    }
+        grid.appendChild(div);
+    });
+}
 
-    function renderUI() {
-        document.getElementById('ui-gold').innerText = player.gold;
-        document.getElementById('ui-gems').innerText = player.gems;
-        document.getElementById('ui-lvl').innerText = player.level;
-        
-        document.getElementById('stat-atk').innerText = player.stats.atk;
-        document.getElementById('stat-def').innerText = player.stats.def;
-        document.getElementById('stat-hp').innerText = player.stats.hp + "/" + player.maxHp;
-        document.getElementById('stat-crit').innerText = player.stats.crit;
-
-        renderInventory();
-        renderChests(); // 更新寶箱解鎖狀態
-    }
-
-    // --- 彈窗與裝備操作 ---
-
-    let currentModalItem = null;
-    let currentModalIsEquipped = false;
-    let currentModalPart = null;
-
-    function openModal(index, isEquipped, part = null) {
-        selectedItemIndex = index;
-        currentModalIsEquipped = isEquipped;
-        currentModalPart = part;
-        
-        if (isEquipped) {
-            currentModalItem = player.equipped[part];
-        } else {
-            currentModalItem = player.inventory[index];
-        }
-
-        if (!currentModalItem) return;
-
-        updateModalContent();
-        document.getElementById('item-modal').style.display = 'flex';
-    }
-
-    function updateModalContent() {
-        const item = currentModalItem;
-        if(!item) return;
-
-        document.getElementById('modal-name').innerText = item.name + (item.enhance > 0 ? ` +${item.enhance}` : '');
-        document.getElementById('modal-name').className = `rarity-${item.rarity}`;
-        document.getElementById('modal-rarity').innerText = `${RARITY_NAMES[item.rarity-1]} ${PARTS[item.part]} (Lv.${item.level})`;
-        
-        // 顯示屬性
-        let statsHtml = '';
-        // 基礎
-        for(let k in item.baseStats) {
-            statsHtml += `<div class="detail-stat-row"><span>${k.toUpperCase()}</span> <span>${item.baseStats[k]}</span></div>`;
-        }
-        // 附加
-        item.bonusStats.forEach(b => {
-            statsHtml += `<div class="detail-stat-row bonus-stat"><span>${b.name}</span> <span>+${b.val}</span></div>`;
-        });
-        document.getElementById('modal-stats').innerHTML = statsHtml;
-
-        // 需求等級與按鈕狀態
-        const reqEl = document.getElementById('modal-req-lvl');
-        const btnEquip = document.getElementById('btn-equip');
-        
-        reqEl.innerText = `需求等級: ${item.reqLevel}`;
-        if (player.level >= item.reqLevel) {
-            reqEl.className = 'req-stat req-ok';
-            btnEquip.disabled = false;
-        } else {
-            reqEl.className = 'req-stat';
-            btnEquip.disabled = true;
-        }
-
-        // 按鈕邏輯
-        if (currentModalIsEquipped) {
-            btnEquip.innerText = "卸下";
-        } else {
-            btnEquip.innerText = "裝備";
-        }
-
-        const enhanceBtn = document.getElementById('btn-enhance');
-        const enhanceCostEl = document.getElementById('enhance-cost-display');
-        
-        if (item.enhance >= 15) {
-            enhanceBtn.disabled = true;
-            enhanceBtn.innerText = "已滿級";
-            enhanceCostEl.innerText = "";
-        } else {
-            enhanceBtn.disabled = false;
-            enhanceBtn.innerText = `強化 (+${item.enhance+1})`;
-            const cost = Math.floor((item.level * 10 + 50) * (item.enhance + 1));
-            enhanceCostEl.innerText = `消耗: 🪙${cost}`;
-            
-            // 提示下一個 Bonus
-            if ((item.enhance + 1) % 5 === 0) {
-                 enhanceCostEl.innerText += " (將解鎖附加屬性!)";
-                 enhanceCostEl.style.color = "#e056fd";
-            }
-        }
-    }
-
-    function closeModal(e) {
-        document.getElementById('item-modal').style.display = 'none';
-    }
-
-    function doEquip() {
-        if (currentModalIsEquipped) {
-            // 卸下
-            player.inventory.push(currentModalItem);
-            delete player.equipped[currentModalPart];
-        } else {
-            // 裝備
-            if (!canEquip(currentModalItem)) {
-                alert("等級不足，無法裝備！");
-                return;
-            }
-            
-            // 檢查該部位是否有舊裝備
-            const part = currentModalItem.part;
-            if (player.equipped[part]) {
-                player.inventory.push(player.equipped[part]);
-            }
-            player.equipped[part] = currentModalItem;
-            player.inventory.splice(selectedItemIndex, 1);
-        }
-        
-        updateStats();
-        renderUI();
-        closeModal();
-    }
-
-    function doEnhance() {
-        if (enhanceItem(currentModalItem)) {
-            // UI 已在 enhanceItem 更新
-        }
-    }
-
-    function doSell() {
-        if(!confirm("確定要出售嗎？")) return;
-        
-        const price = Math.floor(currentModalItem.level * 5 * currentModalItem.rarity);
-        player.gold += price;
-
-        if (currentModalIsEquipped) {
-            delete player.equipped[currentModalPart];
-        } else {
-            player.inventory.splice(selectedItemIndex, 1);
-        }
-
-        updateStats();
-        renderUI();
-        closeModal();
-    }
-
-    function sellAllCommon() {
-        if (!confirm("確定出售所有背包中的普通裝備？")) return;
-        let sold = 0;
-        let gain = 0;
-        for (let i = player.inventory.length - 1; i >= 0; i--) {
-            if (player.inventory[i].rarity === 1) {
-                gain += Math.floor(player.inventory[i].level * 5);
-                player.inventory.splice(i, 1);
-                sold++;
-            }
-        }
-        player.gold += gain;
-        renderUI();
-        alert(`出售了 ${sold} 件裝備，獲得 ${gain} 金幣`);
-    }
-
-    function sortInventory() {
-        player.inventory.sort((a, b) => {
-            if (b.rarity !== a.rarity) return b.rarity - a.rarity;
-            return b.level - a.level;
-        });
-        renderUI();
-    }
-
-    function updateStats() {
-        // 基礎裸身屬性
-        let s = { atk:10 + player.level*2, def:0, hp:100 + player.level*10, crit:0, luck:0 };
-        
-        // 加上裝備屬性
-        for(let part in player.equipped) {
-            const item = player.equipped[part];
-            
-            // 1. 基礎白值
-            for(let k in item.baseStats) {
-                if(s[k] !== undefined) s[k] += item.baseStats[k];
-            }
-            
-            // 2. 附加綠值
-            item.bonusStats.forEach(bonus => {
-                if (bonus.key === 'atk') s.atk += bonus.val;
-                if (bonus.key === 'def') s.def += bonus.val;
-                if (bonus.key === 'hp') s.hp += bonus.val;
-                if (bonus.key === 'crit') s.crit += bonus.val;
-                if (bonus.key === 'luck') s.luck += bonus.val;
-            });
-        }
-        
-        player.stats = s;
-        player.maxHp = s.hp;
-        if(player.hp > player.maxHp) player.hp = player.maxHp;
-    }
-
-    // --- 戰鬥與題目邏輯 (簡化版) ---
+function startBattle(map) {
+    AudioEngine.playBGM(true);
+    document.getElementById('map-select-screen').style.display='none';
+    document.getElementById('battle-active-screen').style.display='block';
+    document.getElementById('battle-tools').style.display='flex';
     
-    function nextBattle() {
-        const isBoss = player.floor % 10 === 0;
-        const scale = 1 + player.floor * 0.2;
-        
-        currentEnemy = {
-            hp: Math.floor((isBoss ? 500 : 100) * scale),
-            maxHp: Math.floor((isBoss ? 500 : 100) * scale),
-            atk: Math.floor((isBoss ? 20 : 5) * scale)
-        };
-        
-        updateBattleUI();
-        nextQuestion();
-    }
+    // Spawn Enemy
+    const level = map.minLv + Math.floor(Math.random()*5);
+    const isBoss = Math.random() < 0.1;
+    const name = MONSTER_NAMES[Math.floor(Math.random()*MONSTER_NAMES.length)];
+    const prefix = MONSTER_PREFIXES[Math.floor(Math.random()*MONSTER_PREFIXES.length)];
+    
+    battleState.active = true;
+    battleState.enemy = {
+        name: isBoss ? `BOSS ${name}` : `${prefix}${name}`,
+        level: level,
+        maxHp: level * 30 * (isBoss?3:1),
+        hp: level * 30 * (isBoss?3:1),
+        atk: level * 5 * (isBoss?1.5:1),
+        isBoss: isBoss,
+        trait: isBoss ? '🔥 終極技能準備中' : ''
+    };
+    
+    // UI Init
+    document.getElementById('boss-sprite').innerText = isBoss ? '👹' : ['🦇','🐺','🕷️','🐍','🦂'][Math.floor(Math.random()*5)];
+    if(isBoss) document.getElementById('boss-sprite').style.transform = "scale(1.5)";
+    
+    updateBattleUI();
+    nextTurn();
+}
 
-    function updateBattleUI() {
-        document.getElementById('ui-floor').innerText = player.floor;
-        document.getElementById('enemy-hp').innerText = currentEnemy.hp;
-        document.getElementById('enemy-max-hp').innerText = currentEnemy.maxHp;
-        
-        const pct = (currentEnemy.hp / currentEnemy.maxHp) * 100;
-        document.getElementById('enemy-hp-bar').style.width = `${pct}%`;
-    }
+function updateBattleUI() {
+    const en = battleState.enemy;
+    document.getElementById('enemy-name').innerText = en.name;
+    document.getElementById('enemy-level').innerText = en.level;
+    document.getElementById('enemy-trait').innerText = en.trait;
+    
+    const php = getStat('hp');
+    // For demo simplicity, player hp in battle is just visual or tied to mistakes. 
+    // Implementing a real HP pool for player:
+    if(!battleState.playerHp) battleState.playerHp = php;
+    
+    document.getElementById('boss-hp-bar').style.width = `${(en.hp/en.maxHp)*100}%`;
+    document.getElementById('boss-hp-text').innerText = `${en.hp}/${en.maxHp}`;
+    
+    document.getElementById('player-hp-bar').style.width = `${(battleState.playerHp/php)*100}%`;
+    document.getElementById('player-hp-text').innerText = `${battleState.playerHp}/${php}`;
 
-    function nextQuestion() {
-        // 從 moe_data.js 獲取題目，如果沒有資料則使用假資料
-        let q = { t: "測試", a: "A", o: ["A", "B", "C", "D"] };
+    document.getElementById('btn-potion-count').innerText = 3; // Infinite for now or track inventory
+    document.getElementById('btn-shield-count').innerText = 1;
+}
+
+function nextTurn() {
+    if(!battleState.active) return;
+    document.getElementById('post-answer-actions').style.display='none';
+    document.getElementById('quiz-area').innerHTML = '<div style="text-align:center; color:#aaa;">題目載入中...</div>';
+    
+    // Generate Quiz
+    const qData = window.MOE_DATA_STRING.trim().split('\n');
+    const raw = qData[Math.floor(Math.random()*qData.length)].split('|');
+    // Format: Type|Question|Correct|Err1,Err2,Err3
+    const type = raw[0];
+    const question = raw[1];
+    const correct = raw[2];
+    const wrongs = raw[3].split(',');
+    
+    const options = [correct, ...wrongs].sort(() => Math.random() - 0.5);
+    
+    battleState.currentQ = { q: question, a: correct, opts: options, type: type, desc: '查無資料' };
+    
+    // Render
+    let html = `<div class="quiz-panel">`;
+    html += `<div style="font-size:1.5rem; text-align:center; margin-bottom:15px; font-weight:bold; color:#fff;">${question}</div>`;
+    
+    options.forEach(opt => {
+        html += `<button class="opt-btn" onclick="answer('${opt}')">${opt}</button>`;
+    });
+    html += `</div>`;
+    document.getElementById('quiz-area').innerHTML = html;
+    
+    // Timer
+    startTimer();
+}
+
+function startTimer() {
+    if(battleState.interval) clearInterval(battleState.interval);
+    battleState.timer = 10;
+    const bar = document.getElementById('battle-timer-bar');
+    bar.style.width = '100%';
+    bar.style.background = '#00d2d3';
+    
+    battleState.interval = setInterval(() => {
+        battleState.timer -= 0.1;
+        bar.style.width = `${(battleState.timer/10)*100}%`;
+        if(battleState.timer < 3) bar.style.background = '#e74c3c';
         
-        if (window.MOE_DATA_STRING) {
-            const lines = window.MOE_DATA_STRING.trim().split('\n');
-            const raw = lines[Math.floor(Math.random() * lines.length)].split('|');
-            // 格式：題型|題目|正確|錯1,錯2,錯3
-            const wrongOpts = raw[3].split(',');
-            const opts = [raw[2], ...wrongOpts].sort(() => Math.random() - 0.5);
-            
-            q = {
-                t: raw[0] == '1' ? `請選出「${raw[2]}」的國字：${raw[1]}` : `請選出「${raw[1]}」的注音`,
-                a: raw[2],
-                o: opts
-            };
+        if(battleState.timer <= 0) {
+            clearInterval(battleState.interval);
+            answer(null); // Timeout
         }
+    }, 100);
+}
 
-        document.getElementById('q-text').innerText = q.t;
-        const optBox = document.getElementById('q-options');
-        optBox.innerHTML = '';
+function answer(ans) {
+    clearInterval(battleState.interval);
+    const isCorrect = ans === battleState.currentQ.a;
+    const btns = document.querySelectorAll('.opt-btn');
+    
+    btns.forEach(b => {
+        b.disabled = true;
+        if(b.innerText === battleState.currentQ.a) b.style.background = '#27ae60';
+        else if(b.innerText === ans) b.style.background = '#c0392b';
+    });
+
+    if(isCorrect) {
+        AudioEngine.sfx.attack();
+        battleState.combo++;
+        if(battleState.combo > battleState.maxCombo) battleState.maxCombo = battleState.combo;
+        battleState.correctQ++;
         
-        q.o.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'btn option-btn';
-            btn.innerText = opt;
-            btn.onclick = () => answer(opt === q.a);
-            optBox.appendChild(btn);
-        });
-    }
-
-    function answer(isCorrect) {
-        const visual = document.getElementById('enemy-visual');
+        // Damage calc
+        const crit = Math.random()*100 < getStat('crit');
+        let dmg = getStat('atk') * (crit?1.5:1);
+        // Combo bonus
+        dmg = Math.floor(dmg * (1 + battleState.combo * 0.1));
         
-        if (isCorrect) {
-            // 玩家攻擊
-            let dmg = player.stats.atk;
-            if (Math.random() * 100 < player.stats.crit) {
-                dmg *= 2;
-                visual.innerText = "💥";
-            } else {
-                visual.innerText = "💢";
-            }
-            
-            setTimeout(() => visual.innerText = "👻", 300);
+        battleState.enemy.hp -= dmg;
+        if(battleState.enemy.hp < 0) battleState.enemy.hp = 0;
+        
+        showFloatText(dmg, crit?'CRIT!':'', '#e74c3c');
+        document.getElementById('boss-sprite').classList.add('anim-monster-hit');
+        setTimeout(()=>document.getElementById('boss-sprite').classList.remove('anim-monster-hit'), 400);
 
-            currentEnemy.hp -= dmg;
-            if (currentEnemy.hp <= 0) {
-                winBattle();
-                return;
-            }
+    } else {
+        AudioEngine.sfx.wrong();
+        battleState.combo = 0;
+        // Player take damage
+        const dodge = Math.random()*100 < getStat('dodge');
+        if(dodge) {
+            showFloatText(0, 'MISS', '#3498db');
         } else {
-            // 玩家受傷
-            const dmg = Math.max(1, currentEnemy.atk - player.stats.def);
-            player.hp -= dmg;
-            if (player.hp <= 0) {
-                player.hp = player.maxHp;
-                alert("你被打敗了！退回上一層...");
-                player.floor = Math.max(1, player.floor - 1);
-                nextBattle();
-            }
-            document.querySelector('.main-container').style.animation = 'shake 0.2s';
-            setTimeout(() => document.querySelector('.main-container').style.animation = '', 200);
-        }
-        updateStats(); // 更新血量顯示
-        updateBattleUI();
-        if (currentEnemy.hp > 0) nextQuestion();
-    }
-
-    function winBattle() {
-        const goldGain = Math.floor(player.floor * 10 * (1 + player.stats.luck*0.05));
-        const expGain = 20;
-        
-        player.gold += goldGain;
-        player.exp += expGain;
-        
-        if (player.exp >= player.maxExp) {
-            player.level++;
-            player.exp = 0;
-            player.maxExp = Math.floor(player.maxExp * 1.2);
-            alert(`恭喜升級！等級提升至 ${player.level}`);
-            updateStats();
-        }
-
-        player.floor++;
-        saveData();
-        renderUI();
-        nextBattle();
-    }
-
-    // --- 存檔系統 ---
-    function saveData() {
-        const data = {
-            player: player
-        };
-        localStorage.setItem('WordHunterSave_V50', JSON.stringify(data));
-    }
-
-    function loadData() {
-        const raw = localStorage.getItem('WordHunterSave_V50');
-        if (raw) {
-            const data = JSON.parse(raw);
-            // 合併存檔與新結構 (避免舊存檔缺少 bonusStats 報錯)
-            player = { ...player, ...data.player };
-            
-            // 檢查舊裝備結構修正
-            player.inventory.forEach(fixItemStruct);
-            for(let p in player.equipped) fixItemStruct(player.equipped[p]);
+            let dmg = battleState.enemy.atk;
+            dmg = Math.max(1, dmg - getStat('def'));
+            battleState.playerHp -= dmg;
+            showFloatText(dmg, 'OUCH', '#fff');
+            document.body.classList.add('anim-player-hit');
+            setTimeout(()=>document.body.classList.remove('anim-player-hit'), 500);
         }
     }
     
-    function fixItemStruct(item) {
-        if(!item) return;
-        if(!item.bonusStats) item.bonusStats = [];
-        if(!item.reqLevel) item.reqLevel = item.level || 1;
-        if(!item.enhance) item.enhance = 0;
-        if(!item.baseStats) {
-            // 嘗試從舊結構恢復
-            item.baseStats = {};
-            if(item.atk) item.baseStats.atk = item.atk;
-            if(item.def) item.baseStats.def = item.def;
-            if(item.hp) item.baseStats.hp = item.hp;
-            if(item.crit) item.baseStats.crit = item.crit;
-            if(item.luck) item.baseStats.luck = item.luck;
-        }
-    }
+    battleState.totalQ++;
+    updateBattleUI();
 
-    // 啟動
-    init();
+    // Check Dead
+    if(battleState.enemy.hp <= 0) {
+        winBattle();
+    } else if(battleState.playerHp <= 0) {
+        loseBattle();
+    } else {
+        document.getElementById('post-answer-actions').style.display = 'flex';
+        if(ans === null) document.querySelector('#quiz-area').innerHTML += `<div style="text-align:center; color:#e74c3c;">時間到！</div>`;
+    }
+}
+
+function showFloatText(val, label, color) {
+    const el = document.createElement('div');
+    el.className = 'float-txt';
+    el.style.color = color;
+    el.innerText = label ? `${label} ${val}` : val;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 1000);
+}
+
+function winBattle() {
+    AudioEngine.sfx.victoryTheme();
+    const xpGain = battleState.enemy.level * 20;
+    const goldGain = battleState.enemy.level * 10;
+    
+    player.xp += xpGain;
+    player.gems += goldGain;
+    
+    // Level Up
+    if(player.xp >= player.maxXp) {
+        player.level++;
+        player.xp = 0;
+        player.maxXp = Math.floor(player.maxXp * 1.2);
+        player.baseStats.atk += 2; player.baseStats.hp += 20;
+        AudioEngine.sfx.win();
+        setTimeout(()=>alert("升級了！"), 500);
+    }
+    
+    saveData();
+    battleState.active = false;
+    
+    setTimeout(() => {
+        document.querySelector('#battle-result-modal .modal-box').innerHTML = `
+            <h2 style="color:#2ecc71;">戰鬥勝利!</h2>
+            <div class="result-stat-grid">
+                <div class="res-row"><span>獲得經驗</span><span class="res-val">+${xpGain}</span></div>
+                <div class="res-row"><span>獲得寶石</span><span class="res-val">+${goldGain}</span></div>
+            </div>
+            <button class="start-btn" onclick="endBattle()">返回地圖</button>
+        `;
+        document.getElementById('battle-result-modal').style.display='flex';
+    }, 1000);
+}
+
+function loseBattle() {
+    battleState.active = false;
+    setTimeout(() => {
+        document.querySelector('#battle-result-modal .modal-box').innerHTML = `
+            <h2 style="color:#e74c3c;">戰鬥失敗...</h2>
+            <p style="color:#aaa;">不要氣餒，強化裝備後再來挑戰！</p>
+            <button class="start-btn" onclick="endBattle()">返回地圖</button>
+        `;
+        document.getElementById('battle-result-modal').style.display='flex';
+    }, 1000);
+}
+
+function endBattle() {
+    document.getElementById('battle-result-modal').style.display='none';
+    document.getElementById('battle-active-screen').style.display='none';
+    document.getElementById('map-select-screen').style.display='block';
+    AudioEngine.playBGM(false);
+    updateUI();
+}
+
+function fleeBattle() {
+    if(confirm("確定要撤退嗎？")) {
+        battleState.active = false;
+        endBattle();
+    }
+}
+
+// --- Tools ---
+function usePotion() {
+    if(battleState.playerHp >= getStat('hp')) return;
+    battleState.playerHp += Math.floor(getStat('hp')*0.3);
+    if(battleState.playerHp > getStat('hp')) battleState.playerHp = getStat('hp');
+    updateBattleUI();
+    AudioEngine.sfx.enhance(); // sound reuse
+}
+
+function useShield() {
+    // Logic placeholder
+    alert("護盾開啟！下一次傷害減半！");
+}
+
+function openDictionary() {
+    if(battleState.currentQ) {
+        window.open(`https://www.moedict.tw/${encodeURI(battleState.currentQ.a.replace(/[「」]/g,''))}`, '_blank');
+    }
+}
+
+function fixError() {
+    if(player.gems < 10) { alert('寶石不足 (需10💎)'); return; }
+    player.gems -= 10;
+    battleState.playerHp += Math.floor(getStat('hp')*0.2);
+    updateBattleUI();
+    updateUI();
+}
 
 </script>
 </body>
